@@ -1,0 +1,18 @@
+.login-page {
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+
+  /* Fundo com a imagem da cidade */
+  background: linear-gradient(
+      rgba(255, 255, 255, 0.7),
+      rgba(255, 255, 255, 0.7)
+    ),
+    url('./img/Avenida Paulista ao amanhecer.png') no-repeat center center;
+  background-size: cover;
+
+  height: 100vh;  /* ocupa toda a tela */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
