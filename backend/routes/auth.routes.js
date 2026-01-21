@@ -1,6 +1,6 @@
 // backend/routes/auth.js
 import express from "express";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { dbPromise } from "../db.js"; // Pool MySQL com promise
 
@@ -149,5 +149,6 @@ router.put("/atualizarsenha", async (req, res) => {
     res.status(500).json({ message: "Erro interno do servidor" });
   }
 });
+
 
 export default router;
