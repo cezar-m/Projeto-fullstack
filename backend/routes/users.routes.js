@@ -1,7 +1,7 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import { authMiddleware, isAdmin } from "../middleware/authMiddleware.js";
-import { dbPromise } from "../db.js"; // ⚡ db com suporte a promise
+import db from "../db.js"; // ⚡ db com suporte a promise
 
 const router = express.Router();
 
@@ -91,4 +91,5 @@ router.delete("/:id", authMiddleware, isAdmin, async (req, res) => {
 });
 
 export default router;
+
 
