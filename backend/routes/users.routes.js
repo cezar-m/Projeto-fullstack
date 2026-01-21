@@ -1,5 +1,5 @@
 import express from "express";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { authMiddleware, isAdmin } from "../middleware/authMiddleware.js";
 import { dbPromise } from "../db.js"; // ⚡ db com suporte a promise
 
@@ -91,3 +91,4 @@ router.delete("/:id", authMiddleware, isAdmin, async (req, res) => {
 });
 
 export default router;
+
