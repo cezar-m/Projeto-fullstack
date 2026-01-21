@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 
 import authRoutes from "./routes/auth.routes.js";
-import userRoutes from "./routes/users.routes.js";
+import usersRoutes from "./routes/users.routes.js";
 import productRoutes from "./routes/products.routes.js";
 
 const app = express();
@@ -23,4 +23,5 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => console.log("API rodando"));
