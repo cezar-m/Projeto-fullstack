@@ -1,35 +1,26 @@
 import express from "express";
 import cors from "cors";
-import path from "path";
-import fs from "fs";
 
-import authRoutes from "./routes/authRoutes.js";
-import usersRoutes from "./routes/usersRoutes.js";
-import productsRoutes from "./routes/productsRoutes.js";
+import authRoutes from "./routes/auth.routes.js";
+import userRoutes from "./routes/users.routes.js";
+import productRoutes from "./routes/products.routes.js";
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: "https://SEU-SITE.vercel.app",
+  credentials: true
+}));
+
 app.use(express.json());
 
-// UPLOADS
-const uploadDir = "uploads";
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-app.use("/uploads", express.static(uploadDir));
-
-// ROTAS
 app.use("/api/auth", authRoutes);
-app.use("/api/users", usersRoutes);
-app.use("/api/products", productsRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/products", productRoutes);
 
-// SERVIR FRONTEND BUILD
-const __dirname = path.resolve();
-app.use(express.static(path.join(__dirname, "frontend/dist")));
-
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "frontend/dist/index.html"));
+app.get("/", (req, res) => {
+  res.send("API ONLINE 🚀");
 });
 
-app.listen(process.env.PORT || 3000);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("API rodando"));
