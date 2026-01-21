@@ -2,7 +2,7 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { dbPromise } from "../db.js"; // Pool MySQL com promise
+import db from "../db.js"; // Pool MySQL com promise
 
 const router = express.Router();
 
@@ -152,3 +152,4 @@ router.put("/atualizarsenha", async (req, res) => {
 
 
 export default router;
+
