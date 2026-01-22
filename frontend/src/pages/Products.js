@@ -34,7 +34,7 @@ export default function Products() {
   // ---------- BUSCAR PRODUTOS ----------
   const fetchProdutos = async () => {
     try {
-      const res = await api.get("/products");
+      const res = await api.get("https://projeto-fullstack-mu.vercel.app/products");
 
       const dados = res.data.map((p) => ({
         ...p,
