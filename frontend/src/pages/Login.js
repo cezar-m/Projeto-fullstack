@@ -24,7 +24,7 @@ export default function Login() {
 
     try {
       // 🔹 Chamada ao backend
-      const res = await api.post("https://projeto-fullstack-mu.vercel.app/auth/login", { email, senha });
+      const res = await api.post("/auth/login", { email, senha });
 
       // 🔹 Dados do usuário retornados pelo backend
       const usuario = {
