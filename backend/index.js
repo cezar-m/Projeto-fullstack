@@ -1,7 +1,7 @@
 // backend/index.js
 import express from "express";
 import cors from "cors";
-import pkg from "pg"; // Postgres
+import pkg from "pg";
 const { Pool } = pkg;
 
 import authRoutes from "./routes/auth.routes.js";
@@ -10,34 +10,37 @@ import productRoutes from "./routes/products.routes.js";
 
 const app = express();
 
-// ================== CORS ==================
-// Lista de frontends permitidos
+// ================== CORS (CORREÇÃO DEFINITIVA) ==================
 const allowedOrigins = [
-  "http://localhost:5173", // Vite dev
-  "https://projeto-fullstack-delta.vercel.app",
-  "https://projeto-fullstack-peach.vercel.app",
+  "http://localhost:5173", // Vite local
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // permite Postman ou server-side requests
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Não permitido por CORS"));
+    // Permite Postman / server-side
+    if (!origin) return callback(null, true);
+
+    // Permite QUALQUER projeto do Vercel
+    if (origin.endsWith(".vercel.app") || allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
+
+    return callback(new Error("Não permitido por CORS"));
   },
   credentials: true,
 }));
 
-// ================== BODY PARSER ==================
-app.use(express.json()); // para JSON no body
-app.use(express.urlencoded({ extended: true })); // para forms
+// 🔴 OBRIGATÓRIO PARA NÃO DAR 405 / CORS
+app.options("*", cors());
 
-// ================== POSTGRES ==================
+// ================== BODY PARSER ==================
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ================== POSTGRES (RENDER) ==================
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // URL do Render
-  ssl: { rejectUnauthorized: false }, // obrigatório no Render
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
 });
 
 // Teste de conexão
@@ -55,7 +58,7 @@ app.get("/", (req, res) => {
   res.send("API ONLINE 🚀");
 });
 
-// ================== START DO SERVIDOR ==================
+// ================== START ==================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`API rodando na porta ${PORT}`);
@@ -63,4 +66,3 @@ app.listen(PORT, "0.0.0.0", () => {
 
 // ================== EXPORT ==================
 export { pool };
-
