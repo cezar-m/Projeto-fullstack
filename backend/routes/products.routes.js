@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import { authMiddleware } from "../middleware/authMiddleware.js";
-import { dbPromise } from "../db.js";
+import { db } from "../db.js";
 
 const router = express.Router();
 
@@ -97,3 +97,4 @@ router.delete("/:id", authMiddleware, async (req, res) => {
 });
 
 export default router;
+
