@@ -1,5 +1,4 @@
 import { useState, useContext } from "react";
-import api from "../api/api"; // Axios configurado
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -16,98 +15,58 @@ export default function Login() {
   const handleLogin = async () => {
     setErro("");
 
-    // 🔴 Validação frontend
+    // ✅ Validação frontend
     if (!email || !senha) {
       setErro("Digite usuário e senha");
       return;
     }
 
     try {
-      // 🔹 Chamada ao backend
-      const res = await api.post("/api/auth/login", { email, senha });
+      // ✅ LOGIN CENTRALIZADO NO CONTEXT
+      await login(email, senha);
 
-      // 🔹 Dados do usuário retornados pelo backend
-      const usuario = {
-        id: res.data.id,
-        nome: res.data.nome,
-        role: res.data.role
-      };
-
-      // 🔹 Salva no AuthContext (userData primeiro, token depois)
-      login(usuario, res.data.token);
-
-      // 🔹 Redireciona para o Dashboard
+      // ✅ Redireciona após login
       navigate("/dashboard");
-
     } catch (err) {
-      if (err.response && err.response.data) {
-        setErro(err.response.data.message || "Usuário ou senha inválidos");
+      if (err.response?.data?.message) {
+        setErro(err.response.data.message);
       } else {
-        setErro("Erro ao conectar com o servidor");
+        setErro("Usuário ou senha inválidos");
       }
     }
   };
 
   return (
-	<div className="login-page">
-		<div style={{ width: "300px", margin: "100px auto" }}>
-		<h2>Login</h2>
+    <div className="login-page">
+      <div style={{ width: "300px", margin: "100px auto" }}>
+        <h2>Login</h2>
 
-			<input
-				type="email"
-				placeholder="Email"
-				value={email}
-				onChange={(e) => setEmail(e.target.value)}
-				style={{ width: "100%", marginBottom: "10px" }}
-			/>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-			<input
-				type="password"
-				placeholder="Senha"
-				value={senha}
-				onChange={(e) => setSenha(e.target.value)}
-				style={{ width: "100%", marginBottom: "10px" }}
-			/>
+        <input
+          type="password"
+          placeholder="Senha"
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
+        />
 
-			{erro && (
-			<p style={{ color: "red", fontSize: "14px" }}>
-				{erro}
-			</p>
-			)}
+        {erro && <p style={{ color: "red" }}>{erro}</p>}
 
-			<button
-				onClick={handleLogin}
-				style={{ width: "100%", marginTop: "10px" }}
-			>
-				Entrar
-			</button>
+        <button onClick={handleLogin}>Entrar</button>
 
-			<button
-				onClick={() => navigate("/register-user")}
-				style={{
-				width: "100%",
-				marginTop: "10px",
-				background: "#eee",
-				color: "#000"
-				}}
-			>
-				Cadastrar Usuário
-			</button>
+        <button onClick={() => navigate("/register-user")}>
+          Cadastrar Usuário
+        </button>
 
-			{/* 🔹 Botão Esqueci minha senha */}
-			<button
-				onClick={() => navigate("/forgot-password")}
-				style={{
-					width: "100%",
-					marginTop: "10px",
-					background: "#f8d7da",
-					color: "#721c24",
-					border: "1px solid #f5c6cb"
-				}}
-			>
-				Esqueci minha senha
-			</button>
-		</div>
-	</div>
+        <button onClick={() => navigate("/forgot-password")}>
+          Esqueci minha senha
+        </button>
+      </div>
+    </div>
   );
 }
