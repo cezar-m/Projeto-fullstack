@@ -27,7 +27,7 @@ export default function ResetPassword() {
 
     try {
       // Chamada ao backend para atualizar a senha
-      await api.put("/auth/atualizarsenha", { email, senha });
+      await api.put("https://projeto-fullstack-mu.vercel.app/auth/atualizarsenha", { email, senha });
       setSucesso("Senha atualizada com sucesso!");
       setTimeout(() => navigate("/"), 2000); // redireciona para login
     } catch (err) {
