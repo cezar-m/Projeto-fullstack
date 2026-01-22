@@ -18,7 +18,7 @@ export default function Users() {
 
   const fetchUsers = async () => {
     try {
-      const res = await api.get("/users");
+      const res = await api.get("https://projeto-fullstack-mu.vercel.app/users");
       setUsuarios(res.data);
     } catch (err) {
       console.error("Erro ao listar usuários:", err);
