@@ -15,7 +15,7 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173", // Vite dev
   "https://projeto-fullstack-delta.vercel.app",
-  "https://projeto-fullstack-five.vercel.app",
+  "https://projeto-fullstack-peach.vercel.app",
 ];
 
 app.use(cors({
@@ -63,3 +63,4 @@ app.listen(PORT, "0.0.0.0", () => {
 
 // ================== EXPORT ==================
 export { pool };
+
