@@ -19,7 +19,7 @@ app.use(express.json()); // para JSON no body
 
 // ================== POSTGRES ==================
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // pega a URL do Render
+  connectionString: "postgres://sistema_admin_user:73HHgeqaguK5tyVW@dpg-d5on099r0fns73adkekg-a:5432/sistema_admin", // pega a URL do Render
   ssl: { rejectUnauthorized: false } // necessário no Render
 });
 
@@ -43,3 +43,4 @@ app.listen(PORT, "0.0.0.0", () => {
 });
 
 export { pool }; // exporta pool se quiser usar nas rotas
+
