@@ -11,7 +11,7 @@ const app = express();
 
 // ================== CORS ==================
 app.use(cors({
-  origin: "https://SEU-FRONTEND.vercel.app", // substitua pela URL do seu frontend
+  origin: "https://projeto-fullstack-delta.vercel.app/", // substitua pela URL do seu frontend
   credentials: true
 }));
 
@@ -44,4 +44,5 @@ app.listen(PORT, "0.0.0.0", () => {
 });
 
 export { pool }; // exporta pool se quiser usar nas rotas
+
 
