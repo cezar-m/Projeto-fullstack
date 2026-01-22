@@ -20,7 +20,7 @@ export default function ForgotPassword() {
 
     try {
       // Chamada ao backend para enviar link/código de redefinição
-      await api.get(`/auth/redefinirsenha/${email}`);
+      await api.get(`https://projeto-fullstack-mu.vercel.app/auth/redefinirsenha/${email}`);
       setSucesso(
         "Email enviado! Clique no link recebido para redefinir a senha."
       );
