@@ -24,7 +24,7 @@ export default function Login() {
 
     try {
       // 🔹 Chamada ao backend
-      const res = await api.post("http://localhost:3000/auth/login", { email, senha });
+      const res = await api.post("/auth/login", { email, senha });
 
       // 🔹 Dados do usuário retornados pelo backend
       const usuario = {
