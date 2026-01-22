@@ -44,3 +44,4 @@ app.listen(PORT, "0.0.0.0", () => {
 });
 
 export { pool }; // exporta pool se quiser usar nas rotas
+
