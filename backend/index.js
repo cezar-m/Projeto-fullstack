@@ -18,9 +18,10 @@ app.use(cors({
 app.use(express.json()); // para JSON no body
 
 // ================== POSTGRES ==================
+// Use process.env.DATABASE_URL com a senha que Render gerou
 const pool = new Pool({
-  connectionString: "postgres://sistema_admin_user:73HHgeqaguK5tyVW@dpg-d5on099r0fns73adkekg-a:5432/sistema_admin", // pega a URL do Render
-  ssl: { rejectUnauthorized: false } // necessário no Render
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false } // obrigatório no Render
 });
 
 pool.connect()
@@ -43,4 +44,3 @@ app.listen(PORT, "0.0.0.0", () => {
 });
 
 export { pool }; // exporta pool se quiser usar nas rotas
-
