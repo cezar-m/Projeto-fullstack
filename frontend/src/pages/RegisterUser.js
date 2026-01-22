@@ -23,7 +23,7 @@ export default function RegisterUser() {
     }
 
     try {
-      const response = await api.post("/auth/register-user", {
+      const response = await api.post("/api/auth/register-user", {
         nome,
         email,
         senha,
