@@ -10,34 +10,35 @@ import productRoutes from "./routes/products.routes.js";
 
 const app = express();
 
-// ================== CORS (CORREÇÃO DEFINITIVA) ==================
-const allowedOrigins = [
-  "http://localhost:5173", // Vite local
-];
-
-app.use(cors({
+/* ================== CORS (VERSÃO DEFINITIVA) ================== */
+const corsOptions = {
   origin: (origin, callback) => {
-    // Permite Postman / server-side
+    // Permite Postman, server-side e health check
     if (!origin) return callback(null, true);
 
-    // Permite QUALQUER projeto do Vercel
-    if (origin.endsWith(".vercel.app") || allowedOrigins.includes(origin)) {
+    // Permite localhost e QUALQUER projeto Vercel
+    if (
+      origin === "http://localhost:5173" ||
+      origin.endsWith(".vercel.app")
+    ) {
       return callback(null, true);
     }
 
-    return callback(new Error("Não permitido por CORS"));
+    return callback(new Error("Origin não permitida pelo CORS"));
   },
   credentials: true,
-}));
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
 
-// 🔴 OBRIGATÓRIO PARA NÃO DAR 405 / CORS
-app.options("*", cors());
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
-// ================== BODY PARSER ==================
+/* ================== BODY PARSER ================== */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ================== POSTGRES (RENDER) ==================
+/* ================== POSTGRES (RENDER) ================== */
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -45,24 +46,24 @@ const pool = new Pool({
 
 // Teste de conexão
 pool.connect()
-  .then(() => console.log("Banco conectado com sucesso"))
-  .catch(err => console.error("Erro no banco:", err));
+  .then(() => console.log("✅ Banco conectado com sucesso"))
+  .catch(err => console.error("❌ Erro no banco:", err));
 
-// ================== ROTAS ==================
+/* ================== ROTAS ================== */
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/products", productRoutes);
 
-// Rota teste
+/* ================== ROTA TESTE ================== */
 app.get("/", (req, res) => {
-  res.send("API ONLINE 🚀");
+  res.status(200).send("API ONLINE 🚀");
 });
 
-// ================== START ==================
+/* ================== START ================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`API rodando na porta ${PORT}`);
+  console.log(`🚀 API rodando na porta ${PORT}`);
 });
 
-// ================== EXPORT ==================
+/* ================== EXPORT ================== */
 export { pool };
