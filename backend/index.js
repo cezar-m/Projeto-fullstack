@@ -1,3 +1,4 @@
+// backend/index.js
 import express from "express";
 import cors from "cors";
 import pkg from "pg"; // Postgres
@@ -10,20 +11,36 @@ import productRoutes from "./routes/products.routes.js";
 const app = express();
 
 // ================== CORS ==================
+// Lista de frontends permitidos
+const allowedOrigins = [
+  "http://localhost:5173", // Vite dev
+  "https://projeto-fullstack-delta.vercel.app",
+  "https://projeto-fullstack-five.vercel.app",
+];
+
 app.use(cors({
-  origin: "https://projeto-fullstack-delta.vercel.app", // substitua pela URL do seu frontend
-  credentials: true
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // permite Postman ou server-side requests
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Não permitido por CORS"));
+    }
+  },
+  credentials: true,
 }));
 
+// ================== BODY PARSER ==================
 app.use(express.json()); // para JSON no body
+app.use(express.urlencoded({ extended: true })); // para forms
 
 // ================== POSTGRES ==================
-// Use process.env.DATABASE_URL com a senha que Render gerou
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false } // obrigatório no Render
+  connectionString: process.env.DATABASE_URL, // URL do Render
+  ssl: { rejectUnauthorized: false }, // obrigatório no Render
 });
 
+// Teste de conexão
 pool.connect()
   .then(() => console.log("Banco conectado com sucesso"))
   .catch(err => console.error("Erro no banco:", err));
@@ -33,6 +50,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/products", productRoutes);
 
+// Rota teste
 app.get("/", (req, res) => {
   res.send("API ONLINE 🚀");
 });
@@ -43,7 +61,5 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`API rodando na porta ${PORT}`);
 });
 
-export { pool }; // exporta pool se quiser usar nas rotas
-
-
-
+// ================== EXPORT ==================
+export { pool };
