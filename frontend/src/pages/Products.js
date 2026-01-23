@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import api from "../api/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_URL = import.meta.env.REACT_APP_API_URL || "http://localhost:3000";
 
 export default function Products() {
   const [produtos, setProdutos] = useState([]);
