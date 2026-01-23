@@ -12,13 +12,13 @@ const router = express.Router();
 router.post("/register-user", async (req, res) => {
   const { nome, email, senha, role } = req.body;
 
-  if (!nome || !email || !senha) {
+  if (!nome || !email || !senha) db{
     return res.status(400).json({ message: "Preencha todos os campos" });
   }
 
   try {
     // Verifica se email já existe
-    const [existing] = await dbPromise.query(
+    const [existing] = await db.query(
       "SELECT id FROM usuarios WHERE email = ?",
       [email]
     );
@@ -93,7 +93,7 @@ router.get("/redefinirsenha/:email", async (req, res) => {
     const { email } = req.params;
 
     // Verifica se o usuário existe
-    const [rows] = await dbPromise.query(
+    const [rows] = await db.query(
       "SELECT id, nome FROM usuarios WHERE email = ?",
       [email]
     );
@@ -127,7 +127,7 @@ router.put("/atualizarsenha", async (req, res) => {
     }
 
     // Verifica usuário
-    const [rows] = await dbPromise.query(
+    const [rows] = await db.query(
       "SELECT id FROM usuarios WHERE email = ?",
       [email]
     );
@@ -138,7 +138,7 @@ router.put("/atualizarsenha", async (req, res) => {
 
     // Atualiza senha
     const hash = await bcrypt.hash(senha, 10);
-    await dbPromise.query(
+    await db.query(
       "UPDATE usuarios SET senha = ? WHERE email = ?",
       [hash, email]
     );
@@ -152,4 +152,5 @@ router.put("/atualizarsenha", async (req, res) => {
 
 
 export default router;
+
 
