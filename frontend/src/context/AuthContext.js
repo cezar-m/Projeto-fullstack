@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
-  // 🔹 Login centralizado
+  // 🔹 Login
   const login = async (email, senha) => {
     try {
       const { data } = await api.post("/api/auth/login", {
@@ -40,10 +40,19 @@ export function AuthProvider({ children }) {
         senha,
       });
 
+      // salva token
       localStorage.setItem("token", data.token);
-      setUser(data.user);
+
+      // backend retorna: id, nome, role
+      setUser({
+        id: data.id,
+        nome: data.nome,
+        role: data.role,
+      });
+
+      return data; // opcional, útil no Login.jsx
     } catch (err) {
-      throw err; // repassa erro para o Login.jsx
+      throw err;
     }
   };
 
