@@ -8,7 +8,7 @@ const router = express.Router();
 // ✅ Lista usuários (apenas admin)
 router.get("/", authMiddleware, isAdmin, async (req, res) => {
   try {
-    const [users] = await dbPromise.query(
+    const [users] = await db.query(
       "SELECT * FROM usuarios"
     );
     res.json(users);
@@ -32,7 +32,7 @@ router.post("/register-user", authMiddleware, isAdmin, async (req, res) => {
 
   try {
     // 🔍 Verifica se email já existe
-    const [existing] = await dbPromise.query(
+    const [existing] = await db.query(
       "SELECT id FROM usuarios WHERE email = ?",
       [email]
     );
@@ -44,7 +44,7 @@ router.post("/register-user", authMiddleware, isAdmin, async (req, res) => {
     const hash = await bcrypt.hash(senha, 10);
 
     // 📝 Insere usuário
-    await dbPromise.query(
+    await db.query(
       "INSERT INTO usuarios (nome, email, senha, role) VALUES (?, ?, ?, ?)",
       [nome, email, hash, roleFinal]
     );
@@ -67,7 +67,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
   }
 
   try {
-    await dbPromise.query(
+    await db.query(
       "UPDATE usuarios SET nome = ?, email = ? WHERE id = ?",
       [nome, email, id]
     );
@@ -82,7 +82,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
 router.delete("/:id", authMiddleware, isAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    await dbPromise.query("DELETE FROM usuarios WHERE id = ?", [id]);
+    await db.query("DELETE FROM usuarios WHERE id = ?", [id]);
     res.json({ message: "Usuário excluído com sucesso" });
   } catch (err) {
     console.error("💥 ERRO AO EXCLUIR USUÁRIO:", err);
@@ -91,5 +91,6 @@ router.delete("/:id", authMiddleware, isAdmin, async (req, res) => {
 });
 
 export default router;
+
 
 
