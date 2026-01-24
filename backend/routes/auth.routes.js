@@ -16,7 +16,7 @@ router.post("/register-user", async (req, res) => {
 
   try {
     const exists = await pool.query(
-      "SELECT id FROM usuarios WHERE email = $1",
+      "SELECT id FROM sistema_admin.usuarios WHERE email = $1",
       [email]
     );
 
@@ -28,7 +28,7 @@ router.post("/register-user", async (req, res) => {
     const roleFinal = role === "admin" ? "admin" : "user";
 
     await pool.query(
-      "INSERT INTO usuarios (nome, email, senha, acesso) VALUES ($1, $2, $3, $4)",
+      "INSERT INTO sistema_admin.usuarios (nome, email, senha, acesso) VALUES ($1, $2, $3, $4)",
       [nome, email, hash, roleFinal]
     );
 
@@ -49,7 +49,7 @@ router.post("/login", async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT * FROM usuarios WHERE email = $1",
+      "SELECT * FROM sistema_admin.usuarios WHERE email = $1",
       [email]
     );
 
@@ -88,4 +88,5 @@ router.get("/user", authMiddleware, (req, res) => {
 });
 
 export default router;
+
 
