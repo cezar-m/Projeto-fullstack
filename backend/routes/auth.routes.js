@@ -2,6 +2,7 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { pool } from "../index.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -65,18 +66,15 @@ router.post("/login", async (req, res) => {
 
     const token = jwt.sign(
       { id: usuario.id, role: usuario.acesso },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || "SECRET_TEMP",
       { expiresIn: "1d" }
     );
 
     res.json({
       token,
-      user: {
-        id: usuario.id,
-        nome: usuario.nome,
-        email: usuario.email,
-        acesso: usuario.acesso
-      }
+      id: usuario.id,
+      nome: usuario.nome,
+      role: usuario.acesso
     });
   } catch (err) {
     console.error("❌ ERRO LOGIN:", err);
@@ -84,9 +82,10 @@ router.post("/login", async (req, res) => {
   }
 });
 
-/* ================== USER LOGADO ================== */
-router.get("/user", (req, res) => {
+/* ================== USUÁRIO LOGADO ================== */
+router.get("/user", authMiddleware, (req, res) => {
   res.json(req.user);
 });
 
 export default router;
+
