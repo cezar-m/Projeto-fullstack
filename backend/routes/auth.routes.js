@@ -15,12 +15,13 @@ router.post("/register-user", async (req, res) => {
   }
 
   try {
-    const exists = await db.query(
+    // MySQL retorna array
+    const [exists] = await db.query(
       "SELECT id FROM sistema_admin.usuarios WHERE email = ?",
       [email]
     );
 
-    if (exists.rows.length > 0) {
+    if (exists.length > 0) {
       return res.status(400).json({ message: "Email já cadastrado" });
     }
 
@@ -28,7 +29,7 @@ router.post("/register-user", async (req, res) => {
     const roleFinal = role === "admin" ? "admin" : "user";
 
     await db.query(
-      "INSERT INTO sistema_admin.usuarios (nome, email, senha, acesso) VALUES ($1, $2, $3, $4)",
+      "INSERT INTO sistema_admin.usuarios (nome, email, senha, acesso) VALUES (?, ?, ?, ?)",
       [nome, email, hash, roleFinal]
     );
 
@@ -48,16 +49,16 @@ router.post("/login", async (req, res) => {
   }
 
   try {
-    const result = await db.query(
+    const [rows] = await db.query(
       "SELECT * FROM sistema_admin.usuarios WHERE email = ?",
       [email]
     );
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ message: "Usuário não encontrado" });
     }
 
-    const usuario = result.rows[0];
+    const usuario = rows[0];
 
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
     if (!senhaValida) {
@@ -65,7 +66,10 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: usuario.id, role: usuario.acesso },
+      {
+        id: usuario.id,
+        role: usuario.acesso
+      },
       process.env.JWT_SECRET || "SECRET_TEMP",
       { expiresIn: "1d" }
     );
@@ -88,4 +92,3 @@ router.get("/user", authMiddleware, (req, res) => {
 });
 
 export default router;
-
