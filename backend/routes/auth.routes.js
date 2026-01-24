@@ -15,9 +15,8 @@ router.post("/register-user", async (req, res) => {
   }
 
   try {
-    // MySQL retorna array
     const [exists] = await db.query(
-      "SELECT id FROM sistema_admin.usuarios WHERE email = ?",
+      "SELECT id FROM usuarios WHERE email = ?",
       [email]
     );
 
@@ -29,7 +28,7 @@ router.post("/register-user", async (req, res) => {
     const roleFinal = role === "admin" ? "admin" : "user";
 
     await db.query(
-      "INSERT INTO sistema_admin.usuarios (nome, email, senha, acesso) VALUES (?, ?, ?, ?)",
+      "INSERT INTO usuarios (nome, email, senha, acesso) VALUES (?, ?, ?, ?)",
       [nome, email, hash, roleFinal]
     );
 
@@ -50,7 +49,7 @@ router.post("/login", async (req, res) => {
 
   try {
     const [rows] = await db.query(
-      "SELECT * FROM sistema_admin.usuarios WHERE email = ?",
+      "SELECT * FROM usuarios WHERE email = ?",
       [email]
     );
 
@@ -66,10 +65,7 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      {
-        id: usuario.id,
-        role: usuario.acesso
-      },
+      { id: usuario.id, role: usuario.acesso },
       process.env.JWT_SECRET || "SECRET_TEMP",
       { expiresIn: "1d" }
     );
