@@ -1,96 +1,78 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import { authMiddleware, isAdmin } from "../middleware/authMiddleware.js";
-import db from "../db.js"; // ⚡ db com suporte a promise
+import { pool } from "../index.js";
 
 const router = express.Router();
 
-// ✅ Lista usuários (apenas admin)
+// ✅ Lista usuários (admin)
 router.get("/", authMiddleware, isAdmin, async (req, res) => {
   try {
-    const [users] = await db.query(
-      "SELECT * FROM usuarios"
-    );
-    res.json(users);
+    const result = await pool.query("SELECT id, nome, email, acesso FROM usuarios");
+    res.json(result.rows);
   } catch (err) {
     console.error("💥 ERRO AO LISTAR USUÁRIOS:", err);
-    res.status(500).json({ error: "Erro ao listar usuários", details: err.message });
+    res.status(500).json({ error: "Erro ao listar usuários" });
   }
 });
 
-// ✅ Criar usuário (apenas admin)
+// ✅ Criar usuário (admin)
 router.post("/register-user", authMiddleware, isAdmin, async (req, res) => {
   const { nome, email, senha, role } = req.body;
-
-  // 🔴 Validação de campos
-  if (!nome || !email || !senha) {
-    return res.status(400).json({ error: "Campos obrigatórios: nome, email e senha" });
-  }
-
-  // 🔴 Validação do ENUM role
   const roleFinal = role === "admin" ? "admin" : "user";
 
   try {
-    // 🔍 Verifica se email já existe
-    const [existing] = await db.query(
-      "SELECT id FROM usuarios WHERE email = ?",
+    const exists = await pool.query(
+      "SELECT id FROM usuarios WHERE email = $1",
       [email]
     );
-    if (existing.length > 0) {
+
+    if (exists.rows.length > 0) {
       return res.status(400).json({ error: "Email já cadastrado" });
     }
 
-    // 🔐 Criptografa senha
     const hash = await bcrypt.hash(senha, 10);
 
-    // 📝 Insere usuário
-    await db.query(
-      "INSERT INTO usuarios (nome, email, senha, role) VALUES (?, ?, ?, ?)",
+    await pool.query(
+      "INSERT INTO usuarios (nome, email, senha, acesso) VALUES ($1, $2, $3, $4)",
       [nome, email, hash, roleFinal]
     );
 
     res.status(201).json({ message: "Usuário criado com sucesso" });
   } catch (err) {
     console.error("💥 ERRO AO CRIAR USUÁRIO:", err);
-    res.status(500).json({ error: "Erro ao criar usuário", details: err.message });
+    res.status(500).json({ error: "Erro ao criar usuário" });
   }
 });
 
-// ✅ Editar usuário
+// ✅ Atualizar usuário
 router.put("/:id", authMiddleware, async (req, res) => {
   const { id } = req.params;
   const { nome, email } = req.body;
 
-  // 🔒 Verifica permissão
   if (req.user.role !== "admin" && req.user.id != id) {
     return res.status(403).json({ error: "Sem permissão" });
   }
 
   try {
-    await db.query(
-      "UPDATE usuarios SET nome = ?, email = ? WHERE id = ?",
+    await pool.query(
+      "UPDATE usuarios SET nome = $1, email = $2 WHERE id = $3",
       [nome, email, id]
     );
     res.json({ message: "Usuário atualizado" });
   } catch (err) {
-    console.error("💥 ERRO AO ATUALIZAR USUÁRIO:", err);
-    res.status(500).json({ error: "Erro ao atualizar usuário", details: err.message });
+    res.status(500).json({ error: "Erro ao atualizar usuário" });
   }
 });
 
-// ✅ Excluir usuário (apenas admin)
+// ✅ Excluir usuário (admin)
 router.delete("/:id", authMiddleware, isAdmin, async (req, res) => {
-  const { id } = req.params;
   try {
-    await db.query("DELETE FROM usuarios WHERE id = ?", [id]);
-    res.json({ message: "Usuário excluído com sucesso" });
+    await pool.query("DELETE FROM usuarios WHERE id = $1", [req.params.id]);
+    res.json({ message: "Usuário excluído" });
   } catch (err) {
-    console.error("💥 ERRO AO EXCLUIR USUÁRIO:", err);
-    res.status(500).json({ error: "Erro ao excluir usuário", details: err.message });
+    res.status(500).json({ error: "Erro ao excluir usuário" });
   }
 });
 
 export default router;
-
-
-
