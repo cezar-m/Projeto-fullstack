@@ -8,6 +8,8 @@ const router = express.Router();
 
 /* ================== REGISTRO ================== */
 router.post("/register-user", async (req, res) => {
+  console.log("🔥 REGISTER HIT", req.body);
+
   const { nome, email, senha, role } = req.body;
 
   if (!nome || !email || !senha) {
@@ -35,12 +37,14 @@ router.post("/register-user", async (req, res) => {
     res.status(201).json({ message: "Usuário criado com sucesso" });
   } catch (err) {
     console.error("❌ ERRO REGISTER:", err);
-    res.status(500).json({ message: "Erro interno do servidor" });
+    res.status(500).json({ message: err.message }); // mostra o erro real
   }
 });
 
 /* ================== LOGIN ================== */
 router.post("/login", async (req, res) => {
+  console.log("🔥 LOGIN HIT", req.body);
+
   const { email, senha } = req.body;
 
   if (!email || !senha) {
@@ -78,12 +82,13 @@ router.post("/login", async (req, res) => {
     });
   } catch (err) {
     console.error("❌ ERRO LOGIN:", err);
-    res.status(500).json({ message: "Erro interno do servidor" });
+    res.status(500).json({ message: err.message }); // mostra o erro real
   }
 });
 
 /* ================== USUÁRIO LOGADO ================== */
 router.get("/user", authMiddleware, (req, res) => {
+  console.log("🔥 USER HIT", req.user);
   res.json(req.user);
 });
 
