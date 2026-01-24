@@ -1,7 +1,7 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { pool } from "../index.js";
+import db from "../db.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -15,8 +15,8 @@ router.post("/register-user", async (req, res) => {
   }
 
   try {
-    const exists = await pool.query(
-      "SELECT id FROM sistema_admin.usuarios WHERE email = $1",
+    const exists = await db.query(
+      "SELECT id FROM sistema_admin.usuarios WHERE email = ?",
       [email]
     );
 
@@ -27,7 +27,7 @@ router.post("/register-user", async (req, res) => {
     const hash = await bcrypt.hash(senha, 10);
     const roleFinal = role === "admin" ? "admin" : "user";
 
-    await pool.query(
+    await db.query(
       "INSERT INTO sistema_admin.usuarios (nome, email, senha, acesso) VALUES ($1, $2, $3, $4)",
       [nome, email, hash, roleFinal]
     );
@@ -48,8 +48,8 @@ router.post("/login", async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      "SELECT * FROM sistema_admin.usuarios WHERE email = $1",
+    const result = await db.query(
+      "SELECT * FROM sistema_admin.usuarios WHERE email = ?",
       [email]
     );
 
@@ -88,5 +88,4 @@ router.get("/user", authMiddleware, (req, res) => {
 });
 
 export default router;
-
 
