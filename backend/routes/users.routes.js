@@ -1,14 +1,14 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import { authMiddleware, isAdmin } from "../middleware/authMiddleware.js";
-import { pool } from "../index.js";
+import db from "../db.js";
 
 const router = express.Router();
 
 // ✅ Lista usuários (admin)
 router.get("/", authMiddleware, isAdmin, async (req, res) => {
   try {
-    const result = await pool.query("SELECT id, nome, email, acesso FROM sistema_admin.usuarios");
+    const result = await db.query("SELECT id, nome, email, acesso FROM sistema_admin.usuarios");
     res.json(result.rows);
   } catch (err) {
     console.error("💥 ERRO AO LISTAR USUÁRIOS:", err);
@@ -22,7 +22,7 @@ router.post("/register-user", authMiddleware, isAdmin, async (req, res) => {
   const roleFinal = role === "admin" ? "admin" : "user";
 
   try {
-    const exists = await pool.query(
+    const exists = await db.query(
       "SELECT id FROM sistema_admin.usuarios WHERE email = $1",
       [email]
     );
@@ -33,7 +33,7 @@ router.post("/register-user", authMiddleware, isAdmin, async (req, res) => {
 
     const hash = await bcrypt.hash(senha, 10);
 
-    await pool.query(
+    await db.query(
       "INSERT INTO sistema_admin.usuarios (nome, email, senha, acesso) VALUES ($1, $2, $3, $4)",
       [nome, email, hash, roleFinal]
     );
@@ -55,7 +55,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
   }
 
   try {
-    await pool.query(
+    await db.query(
       "UPDATE sistema_admin.usuarios SET nome = $1, email = $2 WHERE id = $3",
       [nome, email, id]
     );
@@ -68,7 +68,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
 // ✅ Excluir usuário (admin)
 router.delete("/:id", authMiddleware, isAdmin, async (req, res) => {
   try {
-    await pool.query("DELETE FROM sistema_admin.usuarios WHERE id = $1", [req.params.id]);
+    await db.query("DELETE FROM sistema_admin.usuarios WHERE id = $1", [req.params.id]);
     res.json({ message: "Usuário excluído" });
   } catch (err) {
     res.status(500).json({ error: "Erro ao excluir usuário" });
@@ -76,4 +76,5 @@ router.delete("/:id", authMiddleware, isAdmin, async (req, res) => {
 });
 
 export default router;
+
 
