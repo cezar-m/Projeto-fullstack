@@ -12,14 +12,14 @@ router.post("/register-user", async (req, res) => {
   if (!nome || !email || !senha) return res.status(400).json({ message: "Preencha todos os campos" });
 
   try {
-    const result = await db.query("SELECT id FROM usuarios WHERE email = $1", [email]);
+    const result = await db.query("SELECT id FROM sistema_admin.usuarios WHERE email = $1", [email]);
     if (result.rows.length > 0) return res.status(400).json({ message: "Email já cadastrado" });
 
     const hash = await bcrypt.hash(senha, 10);
     const roleFinal = role === "admin" ? "admin" : "user";
 
     await db.query(
-      "INSERT INTO usuarios (nome, email, senha, acesso) VALUES ($1, $2, $3, $4)",
+      "INSERT INTO sistema_admin.usuarios (nome, email, senha, acesso) VALUES ($1, $2, $3, $4)",
       [nome, email, hash, roleFinal]
     );
 
@@ -37,20 +37,20 @@ router.post("/login", async (req, res) => {
   if (!email || !senha) return res.status(400).json({ message: "Digite usuário e senha" });
 
   try {
-    const result = await db.query("SELECT * FROM usuarios WHERE email = $1", [email]);
+    const result = await db.query("SELECT * FROM sistema_admin.usuarios WHERE email = $1", [email]);
     if (result.rows.length === 0) return res.status(404).json({ message: "Usuário não encontrado" });
 
     const usuario = result.rows[0];
-    const senhaValida = await bcrypt.compare(senha, usuario.senha);
+    const senhaValida = await bcrypt.compare(senha, sistema_admin.usuario.senha);
     if (!senhaValida) return res.status(401).json({ message: "Usuário ou senha inválidos" });
 
     const token = jwt.sign(
-      { id: usuario.id, role: usuario.acesso },
+      { id: sistema_admin.usuario.id, role: sistema_admin.usuario.acesso },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    res.json({ token, id: usuario.id, nome: usuario.nome, role: usuario.acesso });
+    res.json({ token, id: sistema_admin.usuario.id, nome: sistema_admin.usuario.nome, role: sistema_admin.usuario.acesso });
   } catch (err) {
     console.error("❌ ERRO LOGIN:", err);
     res.status(500).json({ message: "Erro interno no login", details: err.message });
@@ -58,4 +58,5 @@ router.post("/login", async (req, res) => {
 });
 
 export default router;
+
 
