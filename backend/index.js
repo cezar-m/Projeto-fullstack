@@ -7,14 +7,12 @@ import usersRoutes from "./routes/users.routes.js";
 import productRoutes from "./routes/products.routes.js";
 
 dotenv.config();
-
 const app = express();
 
 /* ================== CORS ================== */
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://projeto-fullstack-dusky.vercel.app",
-  "https://projeto-fullstack-five.vercel.app" // adicione aqui!
+  /^https:\/\/.*\.vercel\.app$/  // qualquer subdomínio da Vercel
 ];
 
 app.use(cors({
@@ -22,11 +20,10 @@ app.use(cors({
     // Permite Postman / server-side requests sem origin
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
+    if (allowedOrigins.some(o => (o instanceof RegExp ? o.test(origin) : o === origin))) {
       return callback(null, true);
-    } else {
-      return callback(new Error("Not allowed by CORS"));
     }
+    return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -64,4 +61,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API rodando na porta ${PORT}`);
 });
-
