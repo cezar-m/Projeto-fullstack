@@ -15,8 +15,8 @@ const allowedOrigins = [
   /^https:\/\/.*\.vercel\.app$/  // qualquer subdomínio da Vercel
 ];
 
-app.use(cors({
-  origin: function(origin, callback) {
+const corsOptions = {
+  origin: (origin, callback) => {
     // Permite Postman / server-side requests sem origin
     if (!origin) return callback(null, true);
 
@@ -28,13 +28,13 @@ app.use(cors({
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
-}));
+};
 
-// Preflight
-app.options("*", cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
+// Middleware principal
+app.use(cors(corsOptions));
+
+// Preflight (OPTIONS)
+app.options("*", cors(corsOptions));
 
 /* ================== BODY ================== */
 app.use(express.json());
@@ -61,3 +61,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API rodando na porta ${PORT}`);
 });
+
