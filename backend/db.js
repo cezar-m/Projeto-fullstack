@@ -1,18 +1,21 @@
-// db.js
-import pkg from "pg";
+/import pkg from "pg";
 const { Pool } = pkg;
 
 const db = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false } // necessário para Render/Vercel/Supabase
+  ssl: { rejectUnauthorized: false }
 });
 
-// seta o schema padrão
-db.query("SET search_path TO sistema_admin")
-  .then(() => console.log("🔹 Schema sistema_admin definido"))
-  .catch(err => console.error("❌ Erro ao definir schema:", err));
+// Define schema padrão para **cada nova conexão**
+db.on("connect", async (client) => {
+  try {
+    await client.query('SET search_path TO sistema_admin');
+    console.log("🔹 Schema sistema_admin definido");
+  } catch (err) {
+    console.error("❌ ERRO ao definir schema:", err);
+  }
+});
 
-db.on("connect", () => console.log("✅ Conectado ao banco PostgreSQL"));
 db.on("error", (err) => console.error("❌ ERRO no banco PostgreSQL:", err));
 
 export default db;
