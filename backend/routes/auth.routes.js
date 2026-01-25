@@ -41,16 +41,16 @@ router.post("/login", async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ message: "Usuário não encontrado" });
 
     const usuario = result.rows[0];
-    const senhaValida = await bcrypt.compare(senha, sistema_admin.usuario.senha);
+    const senhaValida = await bcrypt.compare(senha, usuario.senha);
     if (!senhaValida) return res.status(401).json({ message: "Usuário ou senha inválidos" });
 
     const token = jwt.sign(
-      { id: sistema_admin.usuario.id, role: sistema_admin.usuario.acesso },
+      { id: usuario.id, role: usuario.acesso },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    res.json({ token, id: sistema_admin.usuario.id, nome: sistema_admin.usuario.nome, role: sistema_admin.usuario.acesso });
+    res.json({ token, id: usuario.id, nome: usuario.nome, role: usuario.acesso });
   } catch (err) {
     console.error("❌ ERRO LOGIN:", err);
     res.status(500).json({ message: "Erro interno no login", details: err.message });
@@ -58,5 +58,6 @@ router.post("/login", async (req, res) => {
 });
 
 export default router;
+
 
 
