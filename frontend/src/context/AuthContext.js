@@ -1,7 +1,6 @@
 import { createContext, useContext, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 
-// 🔹 Exportando o AuthContext diretamente
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -9,18 +8,13 @@ export const AuthProvider = ({ children }) => {
     const stored = localStorage.getItem("user");
     return stored ? JSON.parse(stored) : null;
   });
-  const [loading, setLoading] = useState(false);
 
-  const API = process.env.REACT_APP_API_URL + "/api";
+  const [loading, setLoading] = useState(false);
 
   const login = async (email, senha) => {
     setLoading(true);
     try {
-      const res = await axios.post(
-        `${API}/auth/login`,
-        { email, senha },
-        { headers: { "Content-Type": "application/json" } }
-      );
+      const res = await api.post("/auth/login", { email, senha });
 
       const userData = {
         id: res.data.id,
@@ -33,17 +27,18 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("token", res.data.token);
 
-      setLoading(false);
       return { success: true };
     } catch (err) {
-      setLoading(false);
+      let message = "Erro ao fazer login";
 
-      let message = "Erro desconhecido";
-      if (err.response?.data?.message) message = err.response.data.message;
-      else if (err.message) message = err.message;
+      if (err.response?.data?.message) {
+        message = err.response.data.message;
+      }
 
-      console.error("❌ ERRO LOGIN FRONTEND:", err.response || err.message);
+      console.error("❌ ERRO LOGIN:", err.response || err.message);
       return { success: false, message };
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -60,5 +55,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Hook para acessar o contexto
 export const useAuth = () => useContext(AuthContext);
