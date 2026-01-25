@@ -17,6 +17,7 @@ app.use(cors({
     "http://localhost:5173",
     "https://projeto-fullstack-dusky.vercel.app"
   ],
+  origin: "*", // ou coloque explicitamente os domínios de frontend
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
@@ -49,3 +50,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API rodando na porta ${PORT}`);
 });
+
