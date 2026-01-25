@@ -16,7 +16,7 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
     const id_usuario = req.user.id;
 
     await db.query(
-      "INSERT INTO produtos (nome, preco, quantidade, descricao, imagem, id_usuario) VALUES ($1, $2, $3, $4, $5, $6)",
+      "INSERT INTO sistema_admin.produtos (nome, preco, quantidade, descricao, imagem, id_usuario) VALUES ($1, $2, $3, $4, $5, $6)",
       [nome, preco, quantidade, descricao, imagem, id_usuario]
     );
 
@@ -30,7 +30,7 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
 // LISTAR PRODUTOS DO USUÁRIO
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    const result = await db.query("SELECT * FROM produtos WHERE id_usuario=$1", [req.user.id]);
+    const result = await db.query("SELECT * FROM sistema_admin.produtos WHERE id_usuario=$1", [req.user.id]);
     res.json(result.rows);
   } catch (err) {
     console.error("❌ ERRO PRODUTOS:", err);
@@ -39,3 +39,4 @@ router.get("/", authMiddleware, async (req, res) => {
 });
 
 export default router;
+
