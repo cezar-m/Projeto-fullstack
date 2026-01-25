@@ -16,17 +16,14 @@ router.post("/register-user", async (req, res) => {
   }
 
   try {
-    // Verifica se o usuário já existe
     const [exists] = await db.query("SELECT id FROM usuarios WHERE email = ?", [email]);
     if (exists.length > 0) {
       return res.status(400).json({ message: "Email já cadastrado" });
     }
 
-    // Hash da senha
     const hash = await bcrypt.hash(senha, 10);
     const roleFinal = role === "admin" ? "admin" : "user";
 
-    // Inserir usuário no banco
     await db.query(
       "INSERT INTO usuarios (nome, email, senha, acesso) VALUES (?, ?, ?, ?)",
       [nome, email, hash, roleFinal]
