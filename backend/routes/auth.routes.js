@@ -15,7 +15,7 @@ router.post("/register-user", async (req, res) => {
 
   try {
     // Verifica se email já existe
-    const result = await db.query("SELECT id FROM usuarios WHERE email = $1", [email]);
+    const result = await db.query("SELECT id FROM sistema_admin.usuarios WHERE email = $1", [email]);
     if (result.rows.length > 0) {
       return res.status(400).json({ message: "Email já cadastrado" });
     }
@@ -26,7 +26,7 @@ router.post("/register-user", async (req, res) => {
 
     // Insere usuário
     await db.query(
-      "INSERT INTO usuarios (nome, email, senha, acesso) VALUES ($1, $2, $3, $4)",
+      "INSERT INTO sistema_admin.usuarios (nome, email, senha, acesso) VALUES ($1, $2, $3, $4)",
       [nome, email, hash, roleFinal]
     );
 
@@ -44,7 +44,7 @@ router.post("/login", async (req, res) => {
 
   try {
     // Consulta usuário
-    const result = await db.query("SELECT * FROM usuarios WHERE email = $1", [email]);
+    const result = await db.query("SELECT * FROM sistema_admin.usuarios WHERE email = $1", [email]);
     if (result.rows.length === 0) return res.status(404).json({ message: "Usuário não encontrado" });
 
     const usuario = result.rows[0];
@@ -68,3 +68,4 @@ router.post("/login", async (req, res) => {
 });
 
 export default router;
+
