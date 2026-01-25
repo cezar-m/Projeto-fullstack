@@ -1,3 +1,4 @@
+// index.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -12,7 +13,7 @@ const app = express();
 /* ================== CORS ================== */
 const allowedOrigins = [
   "http://localhost:5173",
-  /^https:\/\/.*\.vercel\.app$/  // qualquer subdomínio da Vercel
+  /^https:\/\/.*\.vercel\.app$/ // qualquer subdomínio da Vercel
 ];
 
 const corsOptions = {
@@ -23,6 +24,7 @@ const corsOptions = {
     if (allowedOrigins.some(o => (o instanceof RegExp ? o.test(origin) : o === origin))) {
       return callback(null, true);
     }
+
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
@@ -33,10 +35,10 @@ const corsOptions = {
 // Middleware principal
 app.use(cors(corsOptions));
 
-// Preflight (OPTIONS)
+// Preflight para todos os endpoints
 app.options("*", cors(corsOptions));
 
-/* ================== BODY ================== */
+/* ================== BODY PARSER ================== */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -61,4 +63,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API rodando na porta ${PORT}`);
 });
-
