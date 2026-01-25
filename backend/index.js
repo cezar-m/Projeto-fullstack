@@ -10,37 +10,44 @@ dotenv.config();
 
 const app = express();
 
-// ================== CORS ==================
+/* ================== CORS ================== */
 const allowedOrigins = [
-  "http://localhost:5173",                  // seu frontend local
-  "https://projeto-fullstack-dusky.vercel.app"  // seu frontend Vercel
+  "http://localhost:5173",
+  "https://projeto-fullstack-dusky.vercel.app"
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // para Postman ou server-to-server
+  origin: function(origin, callback) {
+    // Permite Postman / server-side requests sem origin
+    if (!origin) return callback(null, true);
+
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
+    } else {
+      return callback(new Error("Not allowed by CORS"));
     }
-    return callback(new Error("CORS não permitido"));
   },
-  credentials: true, // aceita cookies
+  credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-app.options("*", cors());
+// Preflight
+app.options("*", cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 
-// ================== BODY PARSER ==================
+/* ================== BODY ================== */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ================== ROTAS ==================
+/* ================== ROTAS ================== */
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/products", productRoutes);
 
-// ================== TESTE ==================
+/* ================== TESTE ================== */
 app.get("/", async (req, res) => {
   try {
     const result = await db.query("SELECT NOW()");
@@ -51,9 +58,8 @@ app.get("/", async (req, res) => {
   }
 });
 
-// ================== START ==================
+/* ================== START ================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API rodando na porta ${PORT}`);
 });
-
