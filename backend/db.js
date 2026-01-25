@@ -1,14 +1,15 @@
-// db.js
 import pkg from "pg";
 const { Pool } = pkg;
 
-const db = new Pool({
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // necessário para Render/Supabase
+  ssl: { rejectUnauthorized: false }
 });
 
-// Teste de conexão
-db.on("connect", () => console.log("✅ Conectado ao banco PostgreSQL"));
-db.on("error", (err) => console.error("❌ ERRO no banco PostgreSQL:", err));
+// 🔥 FORÇA O SCHEMA NO MOMENTO DA CONEXÃO
+pool.on("connect", async (client) => {
+  await client.query("SET search_path TO sistema_admin");
+  console.log("✅ Schema definido como sistema_admin");
+});
 
-export default db;
+export default pool;
