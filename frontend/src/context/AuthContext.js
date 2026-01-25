@@ -1,65 +1,53 @@
-import { createContext, useState, useEffect } from "react";
-import api from "../api/api";
+// AuthContext.js
+import { createContext, useContext, useState } from "react";
+import axios from "axios";
 
-export const AuthContext = createContext();
+const AuthContext = createContext();
 
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // 🔹 Carrega usuário se existir token
-  useEffect(() => {
-    const token = localStorage.getItem("token");
+  // Use a URL do backend no Render
+  const API = "https://projeto-fullstack-djir.onrender.com/api";
 
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    api
-      .get("/api/auth/user", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((res) => {
-        setUser(res.data);
-      })
-      .catch(() => {
-        localStorage.removeItem("token");
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  // 🔹 Login
   const login = async (email, senha) => {
+    setLoading(true);
     try {
-      const { data } = await api.post("/api/auth/login", {
-        email,
-        senha,
+      const res = await axios.post(`${API}/auth/login`, { email, senha }, {
+        headers: { "Content-Type": "application/json" }
       });
 
-      // salva token
-      localStorage.setItem("token", data.token);
-
-      // backend retorna: id, nome, role
+      // Salva dados do usuário no estado
       setUser({
-        id: data.id,
-        nome: data.nome,
-        role: data.role,
+        id: res.data.id,
+        nome: res.data.nome,
+        role: res.data.role,
+        token: res.data.token
       });
 
-      return data; // opcional, útil no Login.jsx
+      // Salva token no localStorage para requisições futuras
+      localStorage.setItem("token", res.data.token);
+
+      setLoading(false);
+      return { success: true };
     } catch (err) {
-      throw err;
+      setLoading(false);
+
+      // Mensagem de erro detalhada
+      let message = "Erro desconhecido";
+      if (err.response && err.response.data && err.response.data.message) {
+        message = err.response.data.message;
+      }
+
+      console.error("❌ ERRO LOGIN FRONTEND:", err.response || err.message);
+      return { success: false, message };
     }
   };
 
-  // 🔹 Logout
   const logout = () => {
-    localStorage.removeItem("token");
     setUser(null);
+    localStorage.removeItem("token");
   };
 
   return (
@@ -67,4 +55,6 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
+};
+
+export const useAuth = () => useContext(AuthContext);
