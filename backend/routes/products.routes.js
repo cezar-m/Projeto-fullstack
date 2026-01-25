@@ -32,7 +32,7 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
     const id_usuario = req.user.id;
 
     await db.query(
-      `INSERT INTO sistema_admin.produtos (nome, preco, quantidade, descricao, imagem, id_usuario) VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO produtos (nome, preco, quantidade, descricao, imagem, id_usuario) VALUES (?, ?, ?, ?, ?, ?)`,
       [nome, preco, quantidade, descricao, imagem, id_usuario]
     );
 
@@ -47,11 +47,11 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const id_usuario = req.user.id;
-    const [produtos] = await db.query("SELECT * FROM sistema_admin.produtos WHERE id_usuario = ?", [id_usuario]);
+    const [produtos] = await db.query("SELECT * FROM produtos WHERE id_usuario = ?", [id_usuario]);
     res.json(produtos);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Erro ao listar sistema_admin.produtos", details: err.message });
+    res.status(500).json({ message: "Erro ao listar produtos", details: err.message });
   }
 });
 
@@ -64,7 +64,7 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
     const id_usuario = req.user.id;
 
     const [result] = await db.query(
-      `UPDATE sistema_admin.produtos SET nome=?, preco=?, quantidade=?, descricao=?, imagem=COALESCE(?, imagem) WHERE id=? AND id_usuario=?`,
+      `UPDATE produtos SET nome=?, preco=?, quantidade=?, descricao=?, imagem=COALESCE(?, imagem) WHERE id=? AND id_usuario=?`,
       [nome, preco, quantidade, descricao, imagem, id, id_usuario]
     );
 
@@ -84,7 +84,7 @@ router.delete("/:id", authMiddleware, async (req, res) => {
     const { id } = req.params;
     const id_usuario = req.user.id;
 
-    const [result] = await db.query("DELETE FROM sistema_admin.produtos WHERE id=? AND id_usuario=?", [id, id_usuario]);
+    const [result] = await db.query("DELETE FROM produtos WHERE id=? AND id_usuario=?", [id, id_usuario]);
 
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "Produto não encontrado ou não pertence ao usuário" });
@@ -97,4 +97,5 @@ router.delete("/:id", authMiddleware, async (req, res) => {
 });
 
 export default router;
+
 
