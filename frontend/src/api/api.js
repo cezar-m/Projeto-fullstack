@@ -1,9 +1,11 @@
 import axios from "axios";
 
-console.log("API =", process.env.REACT_APP_API_URL);
+// Garante que a variável existe
+const BASE_URL = process.env.REACT_APP_API_URL;
+if (!BASE_URL) console.error("⚠️ REACT_APP_API_URL não está definido!");
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
+  baseURL: BASE_URL + "/api",
   withCredentials: true
 });
 
