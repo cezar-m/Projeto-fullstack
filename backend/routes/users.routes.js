@@ -9,7 +9,7 @@ const router = express.Router();
 // LISTAR USUÁRIOS (admin)
 router.get("/", authMiddleware, isAdmin, async (req, res) => {
   try {
-    const result = await db.query("SELECT id, nome, email, acesso FROM usuarios");
+    const result = await db.query("SELECT id, nome, email, acesso FROM sistema_admin.usuarios");
     res.json(result.rows);
   } catch (err) {
     console.error("❌ ERRO AO LISTAR USUÁRIOS:", err);
@@ -27,7 +27,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
   }
 
   try {
-    await db.query("UPDATE usuarios SET nome=$1, email=$2 WHERE id=$3", [nome, email, id]);
+    await db.query("UPDATE sistema_admin.usuarios SET nome=$1, email=$2 WHERE id=$3", [nome, email, id]);
     res.json({ message: "Usuário atualizado" });
   } catch (err) {
     console.error("❌ ERRO AO ATUALIZAR USUÁRIO:", err);
@@ -38,7 +38,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
 // EXCLUIR USUÁRIO (admin)
 router.delete("/:id", authMiddleware, isAdmin, async (req, res) => {
   try {
-    await db.query("DELETE FROM usuarios WHERE id=$1", [req.params.id]);
+    await db.query("DELETE FROM sistema_admin.usuarios WHERE id=$1", [req.params.id]);
     res.json({ message: "Usuário excluído" });
   } catch (err) {
     console.error("❌ ERRO AO EXCLUIR USUÁRIO:", err);
@@ -47,5 +47,6 @@ router.delete("/:id", authMiddleware, isAdmin, async (req, res) => {
 });
 
 export default router;
+
 
 
