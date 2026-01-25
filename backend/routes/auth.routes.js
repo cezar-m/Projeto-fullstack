@@ -59,3 +59,4 @@ router.get("/user", authMiddleware, (req, res) => {
 });
 
 export default router;
+
