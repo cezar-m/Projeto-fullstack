@@ -1,4 +1,3 @@
-// index.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -12,18 +11,32 @@ dotenv.config();
 const app = express();
 
 /* ================== CORS ================== */
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://projeto-fullstack-dusky.vercel.app"
+];
+
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://projeto-fullstack-dusky.vercel.app"
-  ],
-  origin: "*", // ou coloque explicitamente os domínios de frontend
+  origin: function(origin, callback) {
+    // Permite Postman / server-side requests sem origin
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-app.options("*", cors());
+// Preflight
+app.options("*", cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 
 /* ================== BODY ================== */
 app.use(express.json());
@@ -50,4 +63,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API rodando na porta ${PORT}`);
 });
-
