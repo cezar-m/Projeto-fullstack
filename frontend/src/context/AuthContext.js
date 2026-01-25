@@ -5,28 +5,36 @@ import axios from "axios";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    // Recupera usuário do localStorage se já estiver logado
+    const stored = localStorage.getItem("user");
+    return stored ? JSON.parse(stored) : null;
+  });
   const [loading, setLoading] = useState(false);
 
-  // Use a URL do backend no Render
-  const API = "https://projeto-fullstack-djir.onrender.com/api";
+  // URL do backend pelo .env (React)
+  const API = process.env.REACT_APP_API_URL + "/api";
 
+  // LOGIN
   const login = async (email, senha) => {
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/auth/login`, { email, senha }, {
-        headers: { "Content-Type": "application/json" }
-      });
+      const res = await axios.post(
+        `${API}/auth/login`,
+        { email, senha },
+        { headers: { "Content-Type": "application/json" } }
+      );
 
-      // Salva dados do usuário no estado
-      setUser({
+      const userData = {
         id: res.data.id,
         nome: res.data.nome,
         role: res.data.role,
-        token: res.data.token
-      });
+        token: res.data.token,
+      };
 
-      // Salva token no localStorage para requisições futuras
+      // Salva no estado e localStorage
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("token", res.data.token);
 
       setLoading(false);
@@ -34,10 +42,11 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       setLoading(false);
 
-      // Mensagem de erro detalhada
       let message = "Erro desconhecido";
       if (err.response && err.response.data && err.response.data.message) {
         message = err.response.data.message;
+      } else if (err.message) {
+        message = err.message;
       }
 
       console.error("❌ ERRO LOGIN FRONTEND:", err.response || err.message);
@@ -45,8 +54,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // LOGOUT
   const logout = () => {
     setUser(null);
+    localStorage.removeItem("user");
     localStorage.removeItem("token");
   };
 
@@ -57,4 +68,5 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// Hook para acessar o contexto
 export const useAuth = () => useContext(AuthContext);
