@@ -12,14 +12,14 @@ router.post("/register-user", async (req, res) => {
   if (!nome || !email || !senha) return res.status(400).json({ message: "Preencha todos os campos" });
 
   try {
-    const result = await db.query("SELECT id FROM sistema_admin.usuarios WHERE email = $1", [email]);
+    const result = await db.query("SELECT id FROM usuarios WHERE email = $1", [email]);
     if (result.rows.length > 0) return res.status(400).json({ message: "Email já cadastrado" });
 
     const hash = await bcrypt.hash(senha, 10);
     const roleFinal = role === "admin" ? "admin" : "user";
 
     await db.query(
-      "INSERT INTO sistema_admin.usuarios (nome, email, senha, acesso) VALUES ($1, $2, $3, $4)",
+      "INSERT INTO usuarios (nome, email, senha, acesso) VALUES ($1, $2, $3, $4)",
       [nome, email, hash, roleFinal]
     );
 
@@ -37,7 +37,7 @@ router.post("/login", async (req, res) => {
   if (!email || !senha) return res.status(400).json({ message: "Digite usuário e senha" });
 
   try {
-    const result = await db.query("SELECT * FROM sistema_admin.usuarios WHERE email = $1", [email]);
+    const result = await db.query("SELECT * FROM usuarios WHERE email = $1", [email]);
     if (result.rows.length === 0) return res.status(404).json({ message: "Usuário não encontrado" });
 
     const usuario = result.rows[0];
@@ -58,6 +58,7 @@ router.post("/login", async (req, res) => {
 });
 
 export default router;
+
 
 
 
