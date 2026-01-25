@@ -10,39 +10,37 @@ dotenv.config();
 
 const app = express();
 
-// Lista de domínios permitidos
+// ================== CORS ==================
 const allowedOrigins = [
-  "http://localhost:5173",
-  "https://projeto-fullstack-dusky.vercel.app"
+  "http://localhost:5173",                  // seu frontend local
+  "https://projeto-fullstack-dusky.vercel.app"  // seu frontend Vercel
 ];
 
 app.use(cors({
-  origin: function(origin, callback) {
-    // Permite requisições sem origin (Postman, servidor)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = `O CORS não permite acesso de: ${origin}`;
-      return callback(new Error(msg), false);
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // para Postman ou server-to-server
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
-    return callback(null, true);
+    return callback(new Error("CORS não permitido"));
   },
-  credentials: true, // necessário para cookies
+  credentials: true, // aceita cookies
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-app.options("*", cors()); // para preflight requests
+app.options("*", cors());
 
-// BODY
+// ================== BODY PARSER ==================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ROTAS
+// ================== ROTAS ==================
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/products", productRoutes);
 
-// TESTE
+// ================== TESTE ==================
 app.get("/", async (req, res) => {
   try {
     const result = await db.query("SELECT NOW()");
@@ -53,8 +51,9 @@ app.get("/", async (req, res) => {
   }
 });
 
-// START
+// ================== START ==================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API rodando na porta ${PORT}`);
 });
+
