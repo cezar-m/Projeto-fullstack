@@ -1,14 +1,18 @@
-import mysql from "mysql2/promise";
+// db.js
+import pkg from "pg";
+const { Pool } = pkg;
 
-const db = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME, // exemplo: sistema_admin
-  port: Number(process.env.DB_PORT) || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false } // necessário para Render/Vercel/Supabase
+});
+
+db.on("connect", () => {
+  console.log("✅ Conectado ao banco PostgreSQL");
+});
+
+db.on("error", (err) => {
+  console.error("❌ ERRO no banco PostgreSQL:", err);
 });
 
 export default db;
