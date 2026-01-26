@@ -22,7 +22,7 @@ router.post("/register-user", async (req, res) => {
   try {
     // Verifica se o email já existe
     const exists = await db.query(
-      "SELECT id FROM sistema_admin.usuarios WHERE email = $1",
+      "SELECT id FROM usuarios WHERE email = $1",
       [email]
     );
 
@@ -39,7 +39,7 @@ router.post("/register-user", async (req, res) => {
 
     await db.query(
       `
-      INSERT INTO sistema_admin.usuarios
+      INSERT INTO usuarios
       (nome, email, senha, acesso)
       VALUES ($1, $2, $3, $4)
       `,
@@ -78,7 +78,7 @@ router.post("/login", async (req, res) => {
 
   try {
     const result = await db.query(
-      "SELECT * FROM sistema_admin.usuarios WHERE email = $1",
+      "SELECT * FROM usuarios WHERE email = $1",
       [email]
     );
 
@@ -127,3 +127,4 @@ router.post("/login", async (req, res) => {
 });
 
 export default router;
+
