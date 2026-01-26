@@ -1,4 +1,3 @@
-// src/context/AuthContext.js
 import { createContext, useContext, useState } from "react";
 import api from "../api/api";
 
