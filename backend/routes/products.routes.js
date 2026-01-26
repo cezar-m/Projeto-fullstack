@@ -34,7 +34,7 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
       return res.status(400).json({ message: "Todos os campos são obrigatórios" });
 
     await db.query(
-      "INSERT INTO sistema_admin.produtos (nome, preco, quantidade, descricao, imagem, id_usuario) VALUES ($1, $2, $3, $4, $5, $6)",
+      "INSERT INTO produtos (nome, preco, quantidade, descricao, imagem, id_usuario) VALUES ($1, $2, $3, $4, $5, $6)",
       [nome, preco, quantidade, descricao, imagem, id_usuario]
     );
 
@@ -49,7 +49,7 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const result = await db.query(
-      "SELECT * FROM sistema_admin.produtos WHERE id_usuario=$1 ORDER BY id DESC",
+      "SELECT * FROM produtos WHERE id_usuario=$1 ORDER BY id DESC",
       [req.user.id]
     );
     res.json(result.rows);
@@ -68,7 +68,7 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
 
     // Buscar produto atual
     const result = await db.query(
-      "SELECT * FROM sistema_admin.produtos WHERE id=$1 AND id_usuario=$2",
+      "SELECT * FROM produtos WHERE id=$1 AND id_usuario=$2",
       [id, id_usuario]
     );
 
@@ -80,7 +80,7 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
 
     // Atualizar produto
     await db.query(
-      "UPDATE sistema_admin.produtos SET nome=$1, preco=$2, quantidade=$3, descricao=$4, imagem=$5 WHERE id=$6 AND id_usuario=$7",
+      "UPDATE produtos SET nome=$1, preco=$2, quantidade=$3, descricao=$4, imagem=$5 WHERE id=$6 AND id_usuario=$7",
       [nome || produtoAtual.nome, preco || produtoAtual.preco, quantidade || produtoAtual.quantidade, descricao || produtoAtual.descricao, novaImagem, id, id_usuario]
     );
 
@@ -99,7 +99,7 @@ router.delete("/:id", authMiddleware, async (req, res) => {
 
     // Buscar produto para deletar imagem
     const result = await db.query(
-      "SELECT * FROM sistema_admin.produtos WHERE id=$1 AND id_usuario=$2",
+      "SELECT * FROM produtos WHERE id=$1 AND id_usuario=$2",
       [id, id_usuario]
     );
 
@@ -109,7 +109,7 @@ router.delete("/:id", authMiddleware, async (req, res) => {
     const produto = result.rows[0];
 
     // Deletar do DB
-    await db.query("DELETE FROM sistema_admin.produtos WHERE id=$1 AND id_usuario=$2", [id, id_usuario]);
+    await db.query("DELETE FROM produtos WHERE id=$1 AND id_usuario=$2", [id, id_usuario]);
 
     // Deletar imagem do servidor
     if (produto.imagem) {
@@ -125,3 +125,4 @@ router.delete("/:id", authMiddleware, async (req, res) => {
 });
 
 export default router;
+
