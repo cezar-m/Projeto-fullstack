@@ -2,7 +2,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import db from "./db.js";
+import db from "./db.js"; // seu pool do pg
 import authRoutes from "./routes/auth.routes.js";
 import usersRoutes from "./routes/users.routes.js";
 import productRoutes from "./routes/products.routes.js";
@@ -18,7 +18,6 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Permite Postman / server-side requests sem origin
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.some(o => (o instanceof RegExp ? o.test(origin) : o === origin))) {
@@ -34,8 +33,6 @@ const corsOptions = {
 
 // Middleware principal
 app.use(cors(corsOptions));
-
-// Preflight para todos os endpoints
 app.options("*", cors(corsOptions));
 
 /* ================== BODY PARSER ================== */
@@ -46,6 +43,37 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/products", productRoutes);
+
+/* ================== FUNÇÃO DE CRIAÇÃO DE TABELAS ================== */
+const createTables = async () => {
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        senha VARCHAR(255) NOT NULL,
+        acesso VARCHAR(50) NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS produtos (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        preco DECIMAL(10,2) NOT NULL,
+        descricao TEXT,
+        quantidade INT DEFAULT 0,
+        imagem VARCHAR(255),
+        id_usuario INT REFERENCES usuarios(id)
+      );
+    `);
+    console.log("✅ Tabelas criadas/verificadas com sucesso!");
+  } catch (err) {
+    console.error("❌ ERRO ao criar tabelas:", err);
+  }
+};
+
+// Chama a função ao iniciar o servidor
+createTables();
 
 /* ================== TESTE ================== */
 app.get("/", async (req, res) => {
