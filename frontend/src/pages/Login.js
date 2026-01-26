@@ -1,11 +1,11 @@
-import { useState, useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 import "../styles_login.css";
 
 export default function Login() {
-  const { login } = useContext(AuthContext);
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -15,24 +15,17 @@ export default function Login() {
   const handleLogin = async () => {
     setErro("");
 
-    // ✅ Validação frontend
     if (!email || !senha) {
       setErro("Digite usuário e senha");
       return;
     }
 
-    try {
-      // ✅ LOGIN CENTRALIZADO NO CONTEXT
-      await login(email, senha);
+    const res = await login(email, senha);
 
-      // ✅ Redireciona após login
+    if (res.success) {
       navigate("/dashboard");
-    } catch (err) {
-      if (err.response?.data?.message) {
-        setErro(err.response.data.message);
-      } else {
-        setErro("Usuário ou senha inválidos");
-      }
+    } else {
+      setErro(res.message);
     }
   };
 
