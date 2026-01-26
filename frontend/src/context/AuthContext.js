@@ -1,3 +1,4 @@
+// src/context/AuthContext.js
 import { createContext, useContext, useState } from "react";
 import api from "../api/api";
 
@@ -11,6 +12,7 @@ export const AuthProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(false);
 
+  // 🔐 LOGIN
   const login = async (email, senha) => {
     setLoading(true);
     try {
@@ -42,6 +44,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // 🔒 LOGOUT
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
@@ -55,4 +58,5 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// Hook para usar o contexto
 export const useAuth = () => useContext(AuthContext);
