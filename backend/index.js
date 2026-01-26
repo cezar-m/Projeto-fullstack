@@ -48,7 +48,7 @@ app.use("/api/products", productRoutes);
 const createTables = async () => {
   try {
     await db.query(`
-      CREATE TABLE IF NOT EXISTS usuarios (
+      CREATE TABLE IF NOT EXISTS public.usuarios (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -56,14 +56,14 @@ const createTables = async () => {
         acesso VARCHAR(50) NOT NULL
       );
 
-      CREATE TABLE IF NOT EXISTS produtos (
+      CREATE TABLE IF NOT EXISTS public.produtos (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
         preco DECIMAL(10,2) NOT NULL,
         descricao TEXT,
         quantidade INT DEFAULT 0,
         imagem VARCHAR(255),
-        id_usuario INT REFERENCES usuarios(id)
+        id_usuario INT REFERENCES public.usuarios(id)
       );
     `);
     console.log("✅ Tabelas criadas/verificadas com sucesso!");
@@ -91,3 +91,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API rodando na porta ${PORT}`);
 });
+
