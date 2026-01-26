@@ -61,6 +61,45 @@ router.post("/register-user", async (req, res) => {
   }
 });
 
+/* =========================
+   Atualizar senha do usuário logado
+   PUT /api/auth/update-password
+========================= */
+router.put("/update-password", authMiddleware, async (req, res) => {
+  const { senhaAntiga, senhaNova } = req.body;
+
+  if (!senhaAntiga || !senhaNova) {
+    return res.status(400).json({
+      success: false,
+      message: "Preencha todos os campos",
+    });
+  }
+
+  try {
+    const userId = req.user.id; // do token JWT
+    const result = await db.query("SELECT * FROM usuarios WHERE id = $1", [userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Usuário não encontrado" });
+    }
+
+    const usuario = result.rows[0];
+
+    const senhaValida = await bcrypt.compare(senhaAntiga, usuario.senha);
+    if (!senhaValida) {
+      return res.status(401).json({ success: false, message: "Senha antiga incorreta" });
+    }
+
+    const hashNova = await bcrypt.hash(senhaNova, 10);
+    await db.query("UPDATE usuarios SET senha = $1 WHERE id = $2", [hashNova, userId]);
+
+    return res.status(200).json({ success: true, message: "Senha atualizada com sucesso" });
+  } catch (err) {
+    console.error("❌ ERRO ATUALIZAR SENHA:", err);
+    return res.status(500).json({ success: false, message: "Erro interno", details: err.message });
+  }
+});
+
 /* =====================================================
    🔑 LOGIN
 ===================================================== */
@@ -127,60 +166,7 @@ router.post("/login", async (req, res) => {
 });
 
 
-/* =====================================================
-   🔄 ATUALIZAR SENHA (usuário logado)
-   Requer token JWT
-===================================================== */
-router.put("/update-password", authMiddleware, async (req, res) => {
-  const { senhaAntiga, senhaNova } = req.body;
-
-  if (!senhaAntiga || !senhaNova) {
-    return res.status(400).json({
-      success: false,
-      message: "Preencha todos os campos: senhaAntiga e senhaNova",
-    });
-  }
-
-  try {
-    // Pega o ID do usuário do token
-    const userId = req.user.id;
-
-    // Busca usuário no banco
-    const result = await db.query("SELECT * FROM usuarios WHERE id = $1", [userId]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Usuário não encontrado" });
-    }
-
-    const usuario = result.rows[0];
-
-    // Verifica se a senha antiga confere
-    const senhaValida = await bcrypt.compare(senhaAntiga, usuario.senha);
-    if (!senhaValida) {
-      return res.status(401).json({ success: false, message: "Senha antiga incorreta" });
-    }
-
-    // Criptografa nova senha
-    const hashNova = await bcrypt.hash(senhaNova, 10);
-
-    // Atualiza no banco
-    await db.query("UPDATE usuarios SET senha = $1 WHERE id = $2", [hashNova, userId]);
-
-    return res.status(200).json({
-      success: true,
-      message: "Senha atualizada com sucesso",
-    });
-
-  } catch (err) {
-    console.error("❌ ERRO ATUALIZAR SENHA:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Erro interno ao atualizar senha",
-      details: err.message,
-    });
-  }
-});
-
-
 export default router;
+
 
 
