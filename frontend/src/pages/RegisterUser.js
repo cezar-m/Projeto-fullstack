@@ -16,30 +16,33 @@ export default function RegisterUser() {
     setErro("");
     setSucesso("");
 
-    // 🔴 Validação
     if (!nome || !email || !senha) {
       setErro("Preencha todos os campos");
       return;
     }
 
     try {
-      const response = await api.post("/api/auth/register-user", {
+      // ✅ ROTA CORRETA (SEM /api)
+      const response = await api.post("/auth/register-user", {
         nome,
         email,
         senha,
-        role
+        role,
       });
 
-      setSucesso(response.data.message || "Usuário cadastrado com sucesso!");
-       // 🔹 Redireciona para o Dashboard
-	  navigate("/"); // <--- Aqui
+      setSucesso("Usuário cadastrado com sucesso!");
+
+      setTimeout(() => {
+        navigate("/");
+      }, 1000);
 
     } catch (err) {
-      console.error(err);
-      if (err.response) {
-        setErro(err.response.data.error || err.response.data.message || "Erro ao cadastrar");
+      console.error("❌ Erro cadastro:", err.response || err);
+
+      if (err.response?.data?.message) {
+        setErro(err.response.data.message);
       } else {
-        setErro("Erro ao conectar com o servidor");
+        setErro("Erro ao cadastrar usuário");
       }
     }
   }
@@ -96,7 +99,7 @@ export default function RegisterUser() {
           width: "100%",
           marginTop: "10px",
           background: "#eee",
-          color: "#000"
+          color: "#000",
         }}
       >
         Voltar para Login
