@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 
 import db from "./db.js";
@@ -17,10 +18,18 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/* ================== GARANTIR PASTA UPLOADS ================== */
+// ❗ ERRO REAL: a pasta pode não existir em produção
+const uploadsPath = path.join(__dirname, "uploads");
+
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+}
+
 /* ================== CORS ================== */
 const allowedOrigins = [
   "http://localhost:5173",
-  /^https:\/\/.*\.vercel\.app$/
+  /^https:\/\/.*\.vercel\.app$/,
 ];
 
 const corsOptions = {
@@ -39,7 +48,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
@@ -49,8 +58,9 @@ app.options("*", cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/* ================== STATIC FILES ================== */
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+/* ================== STATIC FILES (UPLOADS) ================== */
+// ❗ CORREÇÃO: path garantido + pasta existente
+app.use("/uploads", express.static(uploadsPath));
 
 /* ================== ROTAS ================== */
 app.use("/api/auth", authRoutes);
