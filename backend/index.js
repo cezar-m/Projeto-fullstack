@@ -26,7 +26,7 @@ if (!fs.existsSync(uploadsPath)) {
 /* ================== CORS ================== */
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://projeto-fullstack-1ame40e55-cezarms-projects.vercel.app"
+  "https://projeto-fullstack-ddk4s1lxn-cezarms-projects.vercel.app"
 ];
 
 const corsOptions = {
@@ -113,3 +113,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API rodando na porta ${PORT}`);
 });
+
