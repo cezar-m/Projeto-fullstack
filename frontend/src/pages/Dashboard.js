@@ -17,16 +17,13 @@ export default function Dashboard() {
         <h2>Bem-vindo(a), {user.nome}!</h2>
 
         <div className="mt-4 d-flex gap-2">
-          {/* 🔒 USUÁRIOS → SOMENTE ADMIN */}
-          {user.role === "admin" && (
-            <button
-              className="btn btn-primary"
-              onClick={() => navigate("/users")}
-            >
-              Usuários
-            </button>
+          {user.role?.toLowerCase() === "admin" && (
+          <button className="btn btn-primary"
+            onClick={() => navigate("/users")}
+          >
+            Usuários
+          </button>
           )}
-
           {/* ✅ PRODUTOS → TODOS */}
           <button
             className="btn btn-secondary"
