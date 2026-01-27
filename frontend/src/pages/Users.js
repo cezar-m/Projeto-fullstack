@@ -8,7 +8,7 @@ export default function Users() {
   const [erro, setErro] = useState("");
   const [paginaAtual, setPaginaAtual] = useState(1);
 
-  const { user } = useContext(AuthContext);
+  const { user, token } = useContext(AuthContext);
 
   const usuariosPorPagina = 14;
 
@@ -16,10 +16,14 @@ export default function Users() {
     fetchUsers();
   }, []);
 
-  // 🔥 CORRIGIDO AQUI (REMOVIDO /api DUPLICADO)
   const fetchUsers = async () => {
     try {
-      const res = await api.get("/users");
+      const res = await api.get("/api/users", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       setUsuarios(res.data);
     } catch (err) {
       console.error("Erro ao listar usuários:", err);
@@ -39,7 +43,12 @@ export default function Users() {
     if (!window.confirm("Deseja realmente excluir este usuário?")) return;
 
     try {
-      await api.delete(`/users/${id}`);
+      await api.delete(`/api/users/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       fetchUsers();
 
       if (usuariosPagina.length === 1 && paginaAtual > 1) {
@@ -66,9 +75,7 @@ export default function Users() {
               <th>Nome</th>
               <th>Email</th>
               <th>Acesso</th>
-
-              {/* 🔥 CORRIGIDO: user.role */}
-              {user?.role === "admin" && <th>Ações</th>}
+              {user?.acesso === "admin" && <th>Ações</th>}
             </tr>
           </thead>
 
@@ -77,12 +84,9 @@ export default function Users() {
               <tr key={u.id}>
                 <td>{u.nome}</td>
                 <td>{u.email}</td>
+                <td>{u.acesso || u.role}</td>
 
-                {/* MANTIDO */}
-                <td>{u.acesso}</td>
-
-                {/* 🔥 CORRIGIDO: user.role */}
-                {user?.role === "admin" && (
+                {user?.acesso === "admin" && (
                   <td>
                     {u.id !== user.id && (
                       <button
@@ -107,7 +111,6 @@ export default function Users() {
           </tbody>
         </table>
 
-        {/* CONTROLES DE PAGINAÇÃO */}
         {totalPaginas > 1 && (
           <div className="d-flex justify-content-between align-items-center mt-3">
             <button
