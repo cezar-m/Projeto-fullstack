@@ -13,10 +13,13 @@ router.get("/", async (req, res) => {
     const result = await db.query(
       "SELECT * FROM produtos ORDER BY id DESC"
     );
+
     res.json(result.rows);
   } catch (err) {
     console.error("Erro ao listar produtos:", err);
-    res.status(500).json({ message: "Erro ao listar produtos" });
+    res.status(500).json({
+      message: "Erro ao listar produtos",
+    });
   }
 });
 
@@ -32,15 +35,20 @@ router.post(
       const { nome, preco, descricao, quantidade } = req.body;
 
       if (!nome || !preco || !descricao || !quantidade) {
-        return res.status(400).json({ message: "Dados incompletos" });
+        return res.status(400).json({
+          message: "Dados incompletos",
+        });
       }
 
       let imagemUrl = null;
 
-      // 🔥 upload para Cloudinary
+      // upload da imagem para Cloudinary
       if (req.file) {
-        const result = await uploadToCloudinary(req.file.buffer, "produtos");
-        imagemUrl = result.secure_url;
+        const uploadResult = await uploadToCloudinary(
+          req.file.buffer,
+          "produtos"
+        );
+        imagemUrl = uploadResult.secure_url;
       }
 
       const result = await db.query(
@@ -55,7 +63,9 @@ router.post(
       res.status(201).json(result.rows[0]);
     } catch (err) {
       console.error("Erro ao criar produto:", err);
-      res.status(500).json({ message: "Erro ao criar produto" });
+      res.status(500).json({
+        message: "Erro ao criar produto",
+      });
     }
   }
 );
@@ -72,21 +82,27 @@ router.put(
       const { id } = req.params;
       const { nome, preco, descricao, quantidade } = req.body;
 
+      // verifica se o produto pertence ao usuário
       const produtoAtual = await db.query(
         "SELECT * FROM produtos WHERE id = $1 AND id_usuario = $2",
         [id, req.user.id]
       );
 
       if (produtoAtual.rowCount === 0) {
-        return res.status(404).json({ message: "Produto não encontrado" });
+        return res.status(404).json({
+          message: "Produto não encontrado ou sem permissão",
+        });
       }
 
       let imagemUrl = produtoAtual.rows[0].imagem;
 
-      // 🔥 se enviar nova imagem, substitui
+      // se enviar nova imagem, substitui
       if (req.file) {
-        const result = await uploadToCloudinary(req.file.buffer, "produtos");
-        imagemUrl = result.secure_url;
+        const uploadResult = await uploadToCloudinary(
+          req.file.buffer,
+          "produtos"
+        );
+        imagemUrl = uploadResult.secure_url;
       }
 
       const result = await db.query(
@@ -100,13 +116,23 @@ router.put(
         WHERE id = $6 AND id_usuario = $7
         RETURNING *
         `,
-        [nome, preco, descricao, quantidade, imagemUrl, id, req.user.id]
+        [
+          nome,
+          preco,
+          descricao,
+          quantidade,
+          imagemUrl,
+          id,
+          req.user.id,
+        ]
       );
 
       res.json(result.rows[0]);
     } catch (err) {
       console.error("Erro ao atualizar produto:", err);
-      res.status(500).json({ message: "Erro ao atualizar produto" });
+      res.status(500).json({
+        message: "Erro ao atualizar produto",
+      });
     }
   }
 );
@@ -118,19 +144,32 @@ router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await db.query(
+    // verifica se o produto pertence ao usuário logado
+    const produto = await db.query(
+      "SELECT id FROM produtos WHERE id = $1 AND id_usuario = $2",
+      [id, req.user.id]
+    );
+
+    if (produto.rowCount === 0) {
+      return res.status(404).json({
+        message: "Produto não encontrado ou sem permissão",
+      });
+    }
+
+    // exclui o produto
+    await db.query(
       "DELETE FROM produtos WHERE id = $1 AND id_usuario = $2",
       [id, req.user.id]
     );
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Produto não encontrado" });
-    }
-
-    res.json({ message: "Produto excluído com sucesso" });
+    res.json({
+      message: "Produto excluído com sucesso",
+    });
   } catch (err) {
     console.error("Erro ao excluir produto:", err);
-    res.status(500).json({ message: "Erro ao excluir produto" });
+    res.status(500).json({
+      message: "Erro ao excluir produto",
+    });
   }
 });
 
