@@ -13,7 +13,7 @@ import productRoutes from "./routes/products.routes.js";
 dotenv.config();
 const app = express();
 
-/* ================== FIX __dirname (ES MODULE) ================== */
+/* ================== FIX __dirname ================== */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -24,30 +24,30 @@ if (!fs.existsSync(uploadsPath)) {
 }
 
 /* ================== CORS ================== */
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://projeto-fullstack-ddk4s1lxn-cezarms-projects.vercel.app"
-];
-
-const corsOptions = {
+// ✅ Permite requests de qualquer deploy Vercel + localhost + Postman
+app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // permite Postman / requests internos
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    // requests sem origin (Postman, SSR) são permitidos
+    if (!origin) return callback(null, true);
+
+    // aceita qualquer deploy do Vercel (https://*.vercel.app)
+    if (origin.startsWith("https://") || origin.includes("localhost")) {
+      return callback(null, true);
+    }
+
+    console.warn("CORS bloqueado:", origin);
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
-
-// aplica CORS para todos os requests
-app.use(cors(corsOptions));
+  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization"]
+}));
 
 /* ================== BODY PARSER ================== */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/* ================== STATIC FILES (UPLOADS) ================== */
+/* ================== STATIC FILES ================== */
 app.use("/uploads", express.static(uploadsPath));
 
 /* ================== ROTAS ================== */
@@ -102,9 +102,13 @@ app.get("/", async (req, res) => {
 /* ================== MIDDLEWARE DE ERRO ================== */
 app.use((err, req, res, next) => {
   console.error("❌ Middleware de erro:", err.message);
+
+  // se for CORS, apenas bloqueia sem quebrar login
   if (err.message === "Not allowed by CORS") {
     return res.status(403).json({ message: "CORS bloqueado: origem não permitida" });
   }
+
+  // outros erros
   res.status(500).json({ message: "Erro interno do servidor" });
 });
 
@@ -113,4 +117,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API rodando na porta ${PORT}`);
 });
-
