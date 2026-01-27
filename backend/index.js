@@ -1,4 +1,3 @@
-// index.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -19,9 +18,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /* ================== GARANTIR PASTA UPLOADS ================== */
-// ❗ ERRO REAL: a pasta pode não existir em produção
 const uploadsPath = path.join(__dirname, "uploads");
-
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath, { recursive: true });
 }
@@ -29,21 +26,13 @@ if (!fs.existsSync(uploadsPath)) {
 /* ================== CORS ================== */
 const allowedOrigins = [
   "http://localhost:5173",
-  /^https:\/\/.*\.vercel\.app$/,
+  "https://projeto-fullstack-1ame40e55-cezarms-projects.vercel.app",
 ];
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-
-    if (
-      allowedOrigins.some(o =>
-        o instanceof RegExp ? o.test(origin) : o === origin
-      )
-    ) {
-      return callback(null, true);
-    }
-
+    if (!origin) return callback(null, true); // Postman / Vercel preflight
+    if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
@@ -52,14 +41,13 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.options("*", corsOptions);
 
 /* ================== BODY PARSER ================== */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /* ================== STATIC FILES (UPLOADS) ================== */
-// ❗ CORREÇÃO: path garantido + pasta existente
 app.use("/uploads", express.static(uploadsPath));
 
 /* ================== ROTAS ================== */
@@ -70,6 +58,7 @@ app.use("/api/products", productRoutes);
 /* ================== CRIAR TABELAS ================== */
 const createTables = async () => {
   try {
+    // tabela usuarios
     await db.query(`
       CREATE TABLE IF NOT EXISTS public.usuarios (
         id SERIAL PRIMARY KEY,
@@ -77,8 +66,11 @@ const createTables = async () => {
         email VARCHAR(255) UNIQUE NOT NULL,
         senha VARCHAR(255) NOT NULL,
         acesso VARCHAR(50) NOT NULL
-      );
+      )
+    `);
 
+    // tabela produtos
+    await db.query(`
       CREATE TABLE IF NOT EXISTS public.produtos (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
@@ -87,7 +79,7 @@ const createTables = async () => {
         quantidade INT DEFAULT 0,
         imagem VARCHAR(255),
         id_usuario INT REFERENCES public.usuarios(id)
-      );
+      )
     `);
 
     console.log("✅ Tabelas criadas/verificadas com sucesso!");
