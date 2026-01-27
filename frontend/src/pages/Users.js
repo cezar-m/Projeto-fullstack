@@ -8,7 +8,7 @@ export default function Users() {
   const [erro, setErro] = useState("");
   const [paginaAtual, setPaginaAtual] = useState(1);
 
-  const { user, token } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
 
   const usuariosPorPagina = 14;
 
@@ -18,15 +18,11 @@ export default function Users() {
 
   const fetchUsers = async () => {
     try {
-      const res = await api.get("/api/users", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
+      // ✅ ROTA CORRETA (SEM /api)
+      const res = await api.get("/users");
       setUsuarios(res.data);
     } catch (err) {
-      console.error("Erro ao listar usuários:", err);
+      console.error("❌ Erro ao listar usuários:", err.response || err);
       setErro("Erro ao carregar usuários");
     }
   };
@@ -43,19 +39,15 @@ export default function Users() {
     if (!window.confirm("Deseja realmente excluir este usuário?")) return;
 
     try {
-      await api.delete(`/api/users/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
+      // ✅ ROTA CORRETA
+      await api.delete(`/users/${id}`);
       fetchUsers();
 
       if (usuariosPagina.length === 1 && paginaAtual > 1) {
         setPaginaAtual(paginaAtual - 1);
       }
     } catch (err) {
-      console.error("Erro ao deletar usuário:", err);
+      console.error("❌ Erro ao deletar usuário:", err.response || err);
       setErro("Erro ao deletar usuário");
     }
   };
@@ -75,7 +67,7 @@ export default function Users() {
               <th>Nome</th>
               <th>Email</th>
               <th>Acesso</th>
-              {user?.acesso === "admin" && <th>Ações</th>}
+              {user?.role === "admin" && <th>Ações</th>}
             </tr>
           </thead>
 
@@ -84,9 +76,9 @@ export default function Users() {
               <tr key={u.id}>
                 <td>{u.nome}</td>
                 <td>{u.email}</td>
-                <td>{u.acesso || u.role}</td>
+                <td>{u.acesso}</td>
 
-                {user?.acesso === "admin" && (
+                {user?.role === "admin" && (
                   <td>
                     {u.id !== user.id && (
                       <button
