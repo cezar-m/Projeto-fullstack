@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import api from "../api/api";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 export default function Products() {
   const [produtos, setProdutos] = useState([]);
   const [erro, setErro] = useState("");
 
-  // ---------- FORMULÁRIO ----------
   const [idEditar, setIdEditar] = useState(null);
   const [nome, setNome] = useState("");
   const [preco, setPreco] = useState("");
@@ -15,13 +16,11 @@ export default function Products() {
   const [imagem, setImagem] = useState(null);
   const [preview, setPreview] = useState(null);
 
-  // ---------- FILTROS ----------
   const [busca, setBusca] = useState("");
   const [precoMin, setPrecoMin] = useState("");
   const [precoMax, setPrecoMax] = useState("");
   const [ordenacao, setOrdenacao] = useState("");
 
-  // ---------- PAGINAÇÃO ----------
   const [paginaAtual, setPaginaAtual] = useState(1);
   const itensPorPagina = 5;
 
@@ -29,11 +28,9 @@ export default function Products() {
     fetchProdutos();
   }, []);
 
-  // ---------- BUSCAR PRODUTOS ----------
   const fetchProdutos = async () => {
     try {
       const res = await api.get("/products");
-
       setProdutos(
         res.data.map((p) => ({
           ...p,
@@ -45,7 +42,6 @@ export default function Products() {
     }
   };
 
-  // ---------- PREÇO ----------
   const formatarPrecoInput = (valor) => {
     if (!valor) return "";
     const numero = parseInt(valor.replace(/\D/g, ""), 10);
@@ -66,7 +62,6 @@ export default function Products() {
     setPreco(e.target.value.replace(/\D/g, ""));
   };
 
-  // ---------- IMAGEM ----------
   const handleImagemChange = (e) => {
     const file = e.target.files[0];
     setImagem(file);
@@ -80,31 +75,6 @@ export default function Products() {
     }
   };
 
-  // ---------- FILTRAGEM ----------
-  const produtosFiltrados = produtos
-    .filter((p) =>
-      p.nome.toLowerCase().includes(busca.toLowerCase())
-    )
-    .filter((p) => {
-      if (precoMin && p.preco < Number(precoMin)) return false;
-      if (precoMax && p.preco > Number(precoMax)) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      if (ordenacao === "menor") return a.preco - b.preco;
-      if (ordenacao === "maior") return b.preco - a.preco;
-      return 0;
-    });
-
-  // ---------- PAGINAÇÃO ----------
-  const totalPaginas = Math.ceil(produtosFiltrados.length / itensPorPagina);
-  const inicio = (paginaAtual - 1) * itensPorPagina;
-  const produtosPaginados = produtosFiltrados.slice(
-    inicio,
-    inicio + itensPorPagina
-  );
-
-  // ---------- CRUD ----------
   const limparFormulario = () => {
     setIdEditar(null);
     setNome("");
@@ -148,7 +118,7 @@ export default function Products() {
     setPreco(String(Math.round(p.preco * 100)));
     setQuantidade(p.quantidade);
     setDescricao(p.descricao);
-    setPreview(p.imagem || null); // ✅ URL DIRETA
+    setPreview(p.imagem ? `${API_URL}/uploads/${p.imagem}` : null);
   };
 
   const excluirProduto = async (id) => {
@@ -180,15 +150,15 @@ export default function Products() {
         <hr />
 
         <ul className="list-group">
-          {produtosPaginados.map((p) => (
+          {produtos.map((p) => (
             <li key={p.id} className="list-group-item d-flex justify-content-between align-items-center">
               <div className="d-flex align-items-center gap-3">
-               {p.imagem && (
-                <img
+                {p.imagem && (
+                  <img
                     src={`${API_URL}/uploads/${p.imagem}`}
                     alt={p.nome}
                     style={{ width: 70, height: 70, objectFit: "cover", borderRadius: 6 }}
-                />
+                  />
                 )}
                 <div>
                   <strong>{p.nome}</strong>
