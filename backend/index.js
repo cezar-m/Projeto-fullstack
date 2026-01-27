@@ -4,7 +4,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import db from "./db.js"; // seu pool do pg
+
+import db from "./db.js";
 import authRoutes from "./routes/auth.routes.js";
 import usersRoutes from "./routes/users.routes.js";
 import productRoutes from "./routes/products.routes.js";
@@ -12,17 +13,25 @@ import productRoutes from "./routes/products.routes.js";
 dotenv.config();
 const app = express();
 
+/* ================== FIX __dirname (ES MODULE) ================== */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 /* ================== CORS ================== */
 const allowedOrigins = [
   "http://localhost:5173",
-  /^https:\/\/.*\.vercel\.app$/ // qualquer subdomínio da Vercel
+  /^https:\/\/.*\.vercel\.app$/
 ];
 
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.some(o => (o instanceof RegExp ? o.test(origin) : o === origin))) {
+    if (
+      allowedOrigins.some(o =>
+        o instanceof RegExp ? o.test(origin) : o === origin
+      )
+    ) {
       return callback(null, true);
     }
 
@@ -33,7 +42,6 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"]
 };
 
-// Middleware principal
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
@@ -41,6 +49,7 @@ app.options("*", cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+/* ================== STATIC FILES ================== */
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 /* ================== ROTAS ================== */
@@ -48,7 +57,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/products", productRoutes);
 
-/* ================== FUNÇÃO DE CRIAÇÃO DE TABELAS ================== */
+/* ================== CRIAR TABELAS ================== */
 const createTables = async () => {
   try {
     await db.query(`
@@ -70,22 +79,22 @@ const createTables = async () => {
         id_usuario INT REFERENCES public.usuarios(id)
       );
     `);
+
     console.log("✅ Tabelas criadas/verificadas com sucesso!");
   } catch (err) {
     console.error("❌ ERRO ao criar tabelas:", err);
   }
 };
 
-// Chama a função ao iniciar o servidor
 createTables();
 
 /* ================== TESTE ================== */
 app.get("/", async (req, res) => {
   try {
     const result = await db.query("SELECT NOW()");
-    res.status(200).send(`API ONLINE 🚀 Banco conectado: ${result.rows[0].now}`);
+    res.status(200).send(`API ONLINE 🚀 ${result.rows[0].now}`);
   } catch (err) {
-    console.error("❌ ERRO conexão DB:", err);
+    console.error("❌ ERRO DB:", err);
     res.status(500).send("Erro ao conectar ao banco");
   }
 });
@@ -95,6 +104,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API rodando na porta ${PORT}`);
 });
-
-
-
