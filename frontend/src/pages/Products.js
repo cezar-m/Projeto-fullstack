@@ -183,12 +183,12 @@ export default function Products() {
           {produtosPaginados.map((p) => (
             <li key={p.id} className="list-group-item d-flex justify-content-between align-items-center">
               <div className="d-flex align-items-center gap-3">
-                {p.imagem && (
-                  <img
-                    src={p.imagem} // ✅ CLOUDINARY
+               {p.imagem && (
+                <img
+                    src={`${API_URL}/uploads/${p.imagem}`}
                     alt={p.nome}
-                    style={{ width: 70, height: 70, objectFit: "cover" }}
-                  />
+                    style={{ width: 70, height: 70, objectFit: "cover", borderRadius: 6 }}
+                />
                 )}
                 <div>
                   <strong>{p.nome}</strong>
