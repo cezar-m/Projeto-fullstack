@@ -26,12 +26,12 @@ if (!fs.existsSync(uploadsPath)) {
 /* ================== CORS ================== */
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://projeto-fullstack-1ame40e55-cezarms-projects.vercel.app",
+  "https://projeto-fullstack-1ame40e55-cezarms-projects.vercel.app"
 ];
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // Postman / Vercel preflight
+    if (!origin) return callback(null, true); // permite Postman / requests internos
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error("Not allowed by CORS"));
   },
@@ -40,8 +40,8 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
+// aplica CORS para todos os requests
 app.use(cors(corsOptions));
-app.options("*", corsOptions);
 
 /* ================== BODY PARSER ================== */
 app.use(express.json());
@@ -58,7 +58,6 @@ app.use("/api/products", productRoutes);
 /* ================== CRIAR TABELAS ================== */
 const createTables = async () => {
   try {
-    // tabela usuarios
     await db.query(`
       CREATE TABLE IF NOT EXISTS public.usuarios (
         id SERIAL PRIMARY KEY,
@@ -69,7 +68,6 @@ const createTables = async () => {
       )
     `);
 
-    // tabela produtos
     await db.query(`
       CREATE TABLE IF NOT EXISTS public.produtos (
         id SERIAL PRIMARY KEY,
@@ -99,6 +97,15 @@ app.get("/", async (req, res) => {
     console.error("❌ ERRO DB:", err);
     res.status(500).send("Erro ao conectar ao banco");
   }
+});
+
+/* ================== MIDDLEWARE DE ERRO ================== */
+app.use((err, req, res, next) => {
+  console.error("❌ Middleware de erro:", err.message);
+  if (err.message === "Not allowed by CORS") {
+    return res.status(403).json({ message: "CORS bloqueado: origem não permitida" });
+  }
+  res.status(500).json({ message: "Erro interno do servidor" });
 });
 
 /* ================== START ================== */
