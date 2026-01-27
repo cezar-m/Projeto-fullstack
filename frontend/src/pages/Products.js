@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import api from "../api/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
 export default function Products() {
   const [produtos, setProdutos] = useState([]);
   const [erro, setErro] = useState("");
@@ -16,14 +14,6 @@ export default function Products() {
   const [imagem, setImagem] = useState(null);
   const [preview, setPreview] = useState(null);
 
-  const [busca, setBusca] = useState("");
-  const [precoMin, setPrecoMin] = useState("");
-  const [precoMax, setPrecoMax] = useState("");
-  const [ordenacao, setOrdenacao] = useState("");
-
-  const [paginaAtual, setPaginaAtual] = useState(1);
-  const itensPorPagina = 5;
-
   useEffect(() => {
     fetchProdutos();
   }, []);
@@ -31,22 +21,19 @@ export default function Products() {
   const fetchProdutos = async () => {
     try {
       const res = await api.get("/products");
-      setProdutos(
-        res.data.map((p) => ({
-          ...p,
-          preco: Number(p.preco),
-        }))
-      );
+      setProdutos(res.data);
     } catch {
       setErro("Erro ao carregar produtos");
     }
   };
 
+  const handlePrecoChange = (e) => {
+    setPreco(e.target.value.replace(/\D/g, ""));
+  };
+
   const formatarPrecoInput = (valor) => {
     if (!valor) return "";
-    const numero = parseInt(valor.replace(/\D/g, ""), 10);
-    if (isNaN(numero)) return "";
-    return (numero / 100).toLocaleString("pt-BR", {
+    return (Number(valor) / 100).toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
     });
@@ -57,10 +44,6 @@ export default function Products() {
       style: "currency",
       currency: "BRL",
     });
-
-  const handlePrecoChange = (e) => {
-    setPreco(e.target.value.replace(/\D/g, ""));
-  };
 
   const handleImagemChange = (e) => {
     const file = e.target.files[0];
@@ -93,7 +76,7 @@ export default function Products() {
 
     const formData = new FormData();
     formData.append("nome", nome);
-    formData.append("preco", preco / 100);
+    formData.append("preco", Number(preco) / 100);
     formData.append("quantidade", quantidade);
     formData.append("descricao", descricao);
     if (imagem) formData.append("imagem", imagem);
@@ -107,7 +90,7 @@ export default function Products() {
 
       limparFormulario();
       fetchProdutos();
-    } catch {
+    } catch (err) {
       setErro("Erro ao salvar produto");
     }
   };
@@ -118,11 +101,11 @@ export default function Products() {
     setPreco(String(Math.round(p.preco * 100)));
     setQuantidade(p.quantidade);
     setDescricao(p.descricao);
-    setPreview(p.imagem ? `${API_URL}/uploads/${p.imagem}` : null);
+    setPreview(p.imagem || null);
   };
 
   const excluirProduto = async (id) => {
-    if (!window.confirm("Deseja realmente excluir?")) return;
+    if (!window.confirm("Deseja excluir?")) return;
     await api.delete(`/products/${id}`);
     fetchProdutos();
   };
@@ -151,14 +134,10 @@ export default function Products() {
 
         <ul className="list-group">
           {produtos.map((p) => (
-            <li key={p.id} className="list-group-item d-flex justify-content-between align-items-center">
-              <div className="d-flex align-items-center gap-3">
+            <li key={p.id} className="list-group-item d-flex justify-content-between">
+              <div className="d-flex gap-3">
                 {p.imagem && (
-                  <img
-                    src={`${API_URL}/uploads/${p.imagem}`}
-                    alt={p.nome}
-                    style={{ width: 70, height: 70, objectFit: "cover", borderRadius: 6 }}
-                  />
+                  <img src={p.imagem} alt={p.nome} width="70" height="70" style={{ objectFit: "cover" }} />
                 )}
                 <div>
                   <strong>{p.nome}</strong>
@@ -166,7 +145,6 @@ export default function Products() {
                   <small>Qtd: {p.quantidade}</small>
                 </div>
               </div>
-
               <div>
                 <button className="btn btn-warning btn-sm me-2" onClick={() => editarProduto(p)}>Editar</button>
                 <button className="btn btn-danger btn-sm" onClick={() => excluirProduto(p.id)}>Excluir</button>
