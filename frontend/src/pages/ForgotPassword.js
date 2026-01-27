@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/api";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -8,7 +7,7 @@ export default function ForgotPassword() {
   const [sucesso, setSucesso] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setErro("");
     setSucesso("");
@@ -18,19 +17,12 @@ export default function ForgotPassword() {
       return;
     }
 
-    try {
-      // Chamada ao backend para enviar link/código de redefinição
-      await api.get(`/api/auth/redefinirsenha/${email}`);
-      setSucesso(
-        "Email enviado! Clique no link recebido para redefinir a senha."
-      );
+    // ✅ NÃO EXISTE ENVIO DE EMAIL NO BACKEND
+    setSucesso("Redirecionando para redefinição de senha...");
 
-      // Redireciona para tela de reset passando o email
-      setTimeout(() => navigate(`/reset-password/${email}`), 2000);
-    } catch (err) {
-      console.error(err);
-      setErro("Erro ao enviar email de redefinição");
-    }
+    setTimeout(() => {
+      navigate(`/reset-password/${email}`);
+    }, 1000);
   };
 
   return (
@@ -48,8 +40,9 @@ export default function ForgotPassword() {
           onChange={(e) => setEmail(e.target.value)}
           className="form-control mb-2"
         />
+
         <button type="submit" className="btn btn-primary w-100">
-          Enviar
+          Continuar
         </button>
       </form>
     </div>
