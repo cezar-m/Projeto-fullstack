@@ -1,4 +1,3 @@
-// routes/auth.routes.js
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -8,96 +7,37 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 /* =====================================================
-   🔐 REGISTRO DE USUÁRIO
+   🔐 REGISTRO
 ===================================================== */
 router.post("/register-user", async (req, res) => {
   const { nome, email, senha, role } = req.body;
 
   if (!nome || !email || !senha) {
-    return res.status(400).json({
-      success: false,
-      message: "Preencha todos os campos",
-    });
+    return res.status(400).json({ message: "Preencha todos os campos" });
   }
 
   try {
-    // Verifica se o email já existe
     const exists = await db.query(
       "SELECT id FROM usuarios WHERE email = $1",
       [email]
     );
 
     if (exists.rows.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Email já cadastrado",
-      });
+      return res.status(400).json({ message: "Email já cadastrado" });
     }
 
-    // Criptografa senha
     const hash = await bcrypt.hash(senha, 10);
     const acesso = role === "admin" ? "admin" : "user";
 
     await db.query(
-      `
-      INSERT INTO usuarios
-      (nome, email, senha, acesso)
-      VALUES ($1, $2, $3, $4)
-      `,
+      "INSERT INTO usuarios (nome, email, senha, acesso) VALUES ($1,$2,$3,$4)",
       [nome, email, hash, acesso]
     );
 
-    return res.status(201).json({
-      success: true,
-      message: "Usuário criado com sucesso",
-    });
+    res.status(201).json({ message: "Usuário criado com sucesso" });
   } catch (err) {
-    console.error("❌ ERRO REGISTER:", err);
-
-    return res.status(500).json({
-      success: false,
-      message: "Erro interno no registro",
-      details: err.message,
-    });
-  }
-});
-
-/* =========================
-   Atualizar senha do usuário logado
-   PUT /api/auth/update-password
-========================= */
-router.put("/update-password", authMiddleware, async (req, res) => {
-  const { senhaAntiga, senhaNova } = req.body;
-
-  if (!senhaAntiga || !senhaNova) {
-    return res.status(400).json({
-      success: false,
-      message: "Preencha todos os campos",
-    });
-  }
-
-  try {
-    const userId = req.user.id; // do token JWT
-    const result = await db.query("SELECT * FROM usuarios WHERE id = $1", [userId]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Usuário não encontrado" });
-    }
-
-    const usuario = result.rows[0];
-
-    const senhaValida = await bcrypt.compare(senhaAntiga, usuario.senha);
-    if (!senhaValida) {
-      return res.status(401).json({ success: false, message: "Senha antiga incorreta" });
-    }
-
-    const hashNova = await bcrypt.hash(senhaNova, 10);
-    await db.query("UPDATE usuarios SET senha = $1 WHERE id = $2", [hashNova, userId]);
-
-    return res.status(200).json({ success: true, message: "Senha atualizada com sucesso" });
-  } catch (err) {
-    console.error("❌ ERRO ATUALIZAR SENHA:", err);
-    return res.status(500).json({ success: false, message: "Erro interno", details: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Erro ao cadastrar usuário" });
   }
 });
 
@@ -105,15 +45,10 @@ router.put("/update-password", authMiddleware, async (req, res) => {
    🔑 LOGIN
 ===================================================== */
 router.post("/login", async (req, res) => {
-  console.log("🔥 LOGIN HIT:", req.body);
-
   const { email, senha } = req.body;
 
   if (!email || !senha) {
-    return res.status(400).json({
-      success: false,
-      message: "Email e senha são obrigatórios",
-    });
+    return res.status(400).json({ message: "Email e senha obrigatórios" });
   }
 
   try {
@@ -123,52 +58,102 @@ router.post("/login", async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Usuário não encontrado",
-      });
+      return res.status(401).json({ message: "Credenciais inválidas" });
     }
 
     const usuario = result.rows[0];
-
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
-    if (!senhaValida) {
-      return res.status(401).json({
-        success: false,
-        message: "Usuário ou senha inválidos",
-      });
-    }
 
-    // 🔐 GARANTE JWT_SECRET
-    const JWT_SECRET = process.env.JWT_SECRET || "JWT_TEMP_SECRET";
+    if (!senhaValida) {
+      return res.status(401).json({ message: "Credenciais inválidas" });
+    }
 
     const token = jwt.sign(
       { id: usuario.id, role: usuario.acesso },
-      JWT_SECRET,
+      process.env.JWT_SECRET || "JWT_TEMP",
       { expiresIn: "1d" }
     );
 
-    return res.status(200).json({
-      success: true,
+    res.json({
       token,
       id: usuario.id,
       nome: usuario.nome,
       role: usuario.acesso,
     });
   } catch (err) {
-    console.error("❌ ERRO LOGIN:", err);
-
-    return res.status(500).json({
-      success: false,
-      message: "Erro interno no login",
-      details: err.message,
-    });
+    console.error(err);
+    res.status(500).json({ message: "Erro no login" });
   }
 });
 
+/* =====================================================
+   🔒 ATUALIZAR SENHA (LOGADO)
+===================================================== */
+router.put("/update-password", authMiddleware, async (req, res) => {
+  const { senhaAntiga, senhaNova } = req.body;
+
+  if (!senhaAntiga || !senhaNova) {
+    return res.status(400).json({ message: "Campos obrigatórios" });
+  }
+
+  try {
+    const userId = req.user.id;
+
+    const result = await db.query(
+      "SELECT senha FROM usuarios WHERE id = $1",
+      [userId]
+    );
+
+    const senhaValida = await bcrypt.compare(
+      senhaAntiga,
+      result.rows[0].senha
+    );
+
+    if (!senhaValida) {
+      return res.status(401).json({ message: "Senha antiga incorreta" });
+    }
+
+    const hash = await bcrypt.hash(senhaNova, 10);
+
+    await db.query(
+      "UPDATE usuarios SET senha = $1 WHERE id = $2",
+      [hash, userId]
+    );
+
+    res.json({ message: "Senha atualizada com sucesso" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao atualizar senha" });
+  }
+});
+
+/* =====================================================
+   🔁 REDEFINIR SENHA (SEM LOGIN)  ← 🔥 BUG PRINCIPAL
+===================================================== */
+router.put("/atualizarsenha", async (req, res) => {
+  const { email, senha } = req.body;
+
+  if (!email || !senha) {
+    return res.status(400).json({ message: "Dados inválidos" });
+  }
+
+  try {
+    const hash = await bcrypt.hash(senha, 10);
+
+    const result = await db.query(
+      "UPDATE usuarios SET senha = $1 WHERE email = $2",
+      [hash, email]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    res.json({ message: "Senha redefinida com sucesso" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao redefinir senha" });
+  }
+});
 
 export default router;
-
-
-
-
