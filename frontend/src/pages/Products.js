@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import api from "../api/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
 export default function Products() {
   const [produtos, setProdutos] = useState([]);
   const [erro, setErro] = useState("");
@@ -11,7 +9,7 @@ export default function Products() {
   // ---------- FORMULÁRIO ----------
   const [idEditar, setIdEditar] = useState(null);
   const [nome, setNome] = useState("");
-  const [preco, setPreco] = useState(""); // centavos
+  const [preco, setPreco] = useState("");
   const [quantidade, setQuantidade] = useState("");
   const [descricao, setDescricao] = useState("");
   const [imagem, setImagem] = useState(null);
@@ -36,12 +34,12 @@ export default function Products() {
     try {
       const res = await api.get("/products");
 
-      const dados = res.data.map((p) => ({
-        ...p,
-        preco: Number(p.preco),
-      }));
-
-      setProdutos(dados);
+      setProdutos(
+        res.data.map((p) => ({
+          ...p,
+          preco: Number(p.preco),
+        }))
+      );
     } catch {
       setErro("Erro ao carregar produtos");
     }
@@ -62,7 +60,6 @@ export default function Products() {
     Number(valor).toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
-      minimumFractionDigits: 2,
     });
 
   const handlePrecoChange = (e) => {
@@ -106,12 +103,6 @@ export default function Products() {
     inicio,
     inicio + itensPorPagina
   );
-
-  const mudarPagina = (pagina) => {
-    if (pagina >= 1 && pagina <= totalPaginas) {
-      setPaginaAtual(pagina);
-    }
-  };
 
   // ---------- CRUD ----------
   const limparFormulario = () => {
@@ -157,7 +148,7 @@ export default function Products() {
     setPreco(String(Math.round(p.preco * 100)));
     setQuantidade(p.quantidade);
     setDescricao(p.descricao);
-    setPreview(p.imagem ? `${API_URL}/uploads/${p.imagem}` : null);
+    setPreview(p.imagem || null); // ✅ URL DIRETA
   };
 
   const excluirProduto = async (id) => {
@@ -174,7 +165,6 @@ export default function Products() {
         <h2>Produtos</h2>
         {erro && <p className="text-danger">{erro}</p>}
 
-        {/* FORMULÁRIO */}
         <input className="form-control mb-2" placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
         <input className="form-control mb-2" placeholder="Preço" value={formatarPrecoInput(preco)} onChange={handlePrecoChange} />
         <input className="form-control mb-2" type="number" placeholder="Quantidade" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
@@ -189,39 +179,17 @@ export default function Products() {
 
         <hr />
 
-        {/* FILTROS */}
-        <div className="row mb-3">
-          <div className="col-md-3">
-            <input className="form-control" placeholder="Buscar nome" value={busca} onChange={(e) => setBusca(e.target.value)} />
-          </div>
-          <div className="col-md-2">
-            <input className="form-control" type="number" placeholder="Preço mín" value={precoMin} onChange={(e) => setPrecoMin(e.target.value)} />
-          </div>
-          <div className="col-md-2">
-            <input className="form-control" type="number" placeholder="Preço máx" value={precoMax} onChange={(e) => setPrecoMax(e.target.value)} />
-          </div>
-          <div className="col-md-3">
-            <select className="form-select" value={ordenacao} onChange={(e) => setOrdenacao(e.target.value)}>
-              <option value="">Ordenar preço</option>
-              <option value="menor">Menor preço</option>
-              <option value="maior">Maior preço</option>
-            </select>
-          </div>
-        </div>
-
-        {/* LISTA COM IMAGEM */}
         <ul className="list-group">
           {produtosPaginados.map((p) => (
             <li key={p.id} className="list-group-item d-flex justify-content-between align-items-center">
               <div className="d-flex align-items-center gap-3">
                 {p.imagem && (
                   <img
-                    src={`${API_URL}/uploads/${p.imagem}`}
+                    src={p.imagem} // ✅ CLOUDINARY
                     alt={p.nome}
-                    style={{ width: 70, height: 70, objectFit: "cover", borderRadius: 6 }}
+                    style={{ width: 70, height: 70, objectFit: "cover" }}
                   />
                 )}
-
                 <div>
                   <strong>{p.nome}</strong>
                   <div>{formatarPrecoLista(p.preco)}</div>
@@ -236,27 +204,6 @@ export default function Products() {
             </li>
           ))}
         </ul>
-
-        {/* PAGINAÇÃO */}
-        <nav className="mt-3">
-          <ul className="pagination">
-            <li className="page-item">
-              <button className="page-link" onClick={() => mudarPagina(paginaAtual - 1)}>Anterior</button>
-            </li>
-
-            {Array.from({ length: totalPaginas }).map((_, i) => (
-              <li key={i} className={`page-item ${paginaAtual === i + 1 ? "active" : ""}`}>
-                <button className="page-link" onClick={() => mudarPagina(i + 1)}>
-                  {i + 1}
-                </button>
-              </li>
-            ))}
-
-            <li className="page-item">
-              <button className="page-link" onClick={() => mudarPagina(paginaAtual + 1)}>Próxima</button>
-            </li>
-          </ul>
-        </nav>
       </div>
     </div>
   );
