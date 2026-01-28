@@ -44,9 +44,12 @@ app.use("/api/products", productRoutes);
 /* ================== BANCO (APENAS DEV) ================== */
 const createTables = async () => {
   try {
-    // ================== USUÁRIOS ==================
+   /* ================== BANCO (APENAS DEV) ================== */
+const createTables = async () => {
+  try {
+    // 🔹 USUÁRIOS
     await db.query(`
-      CREATE TABLE IF NOT EXISTS usuarios (
+      CREATE TABLE IF NOT EXISTS public.usuarios (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -55,19 +58,21 @@ const createTables = async () => {
       );
     `);
 
-    // ================== PRODUTOS ==================
+    // 🔹 PRODUTOS (1 usuário → N produtos)
     await db.query(`
-      CREATE TABLE IF NOT EXISTS produtos (
+      CREATE TABLE IF NOT EXISTS public.produtos (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
         preco NUMERIC(10,2) NOT NULL,
         descricao TEXT,
         quantidade INT DEFAULT 0,
         imagem VARCHAR(255),
+
         id_usuario INT NOT NULL,
+
         CONSTRAINT fk_usuario
           FOREIGN KEY (id_usuario)
-          REFERENCES usuarios(id)
+          REFERENCES public.usuarios(id)
           ON DELETE CASCADE
       );
     `);
@@ -106,3 +111,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API rodando na porta ${PORT}`);
 });
+
