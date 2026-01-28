@@ -44,9 +44,6 @@ app.use("/api/products", productRoutes);
 /* ================== BANCO (APENAS DEV) ================== */
 const createTables = async () => {
   try {
-   /* ================== BANCO (APENAS DEV) ================== */
-const createTables = async () => {
-  try {
     // 🔹 USUÁRIOS
     await db.query(`
       CREATE TABLE IF NOT EXISTS public.usuarios (
@@ -111,4 +108,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API rodando na porta ${PORT}`);
 });
-
