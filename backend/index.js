@@ -13,33 +13,24 @@ dotenv.config();
 /* ================== APP ================== */
 const app = express();
 
-/* ================== CORS ================== */
-// ✅ CORS correto para JWT + Render + Vercel
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:3000",
-  "https://projeto-fullstack-dusky.vercel.app",
-  "https://projeto-fullstack-seven.vercel.app"
-];
-
+/* ================== CORS (SEM QUEBRAR LOGIN) ================== */
+/*
+  ❗ Regra:
+  - Browser precisa de preflight (OPTIONS)
+  - Nunca lançar erro no CORS
+  - Render + Vercel funcionam juntos
+*/
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Permite Postman / SSR
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      console.warn("❌ CORS bloqueado:", origin);
-      return callback(new Error("Not allowed by CORS"));
-    },
+    origin: true, // ✅ aceita qualquer origem válida (Vercel, Render, localhost)
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
+
+// ✅ responde preflight
+app.options("*", cors());
 
 /* ================== BODY PARSER ================== */
 app.use(express.json());
@@ -53,9 +44,9 @@ app.use("/api/products", productRoutes);
 /* ================== BANCO (APENAS DEV) ================== */
 const createTables = async () => {
   try {
-    // 🔹 USUÁRIOS
+    // ================== USUÁRIOS ==================
     await db.query(`
-      CREATE TABLE IF NOT EXISTS public.usuarios (
+      CREATE TABLE IF NOT EXISTS usuarios (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -64,32 +55,30 @@ const createTables = async () => {
       );
     `);
 
-    // 🔹 PRODUTOS (1 usuário → N produtos)
+    // ================== PRODUTOS ==================
     await db.query(`
-      CREATE TABLE IF NOT EXISTS public.produtos (
+      CREATE TABLE IF NOT EXISTS produtos (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
         preco NUMERIC(10,2) NOT NULL,
         descricao TEXT,
         quantidade INT DEFAULT 0,
         imagem VARCHAR(255),
-
         id_usuario INT NOT NULL,
-
         CONSTRAINT fk_usuario
           FOREIGN KEY (id_usuario)
-          REFERENCES public.usuarios(id)
+          REFERENCES usuarios(id)
           ON DELETE CASCADE
       );
     `);
 
-    console.log("✅ Tabelas criadas/verificadas com sucesso");
-  } catch (error) {
-    console.error("❌ Erro ao criar tabelas:", error);
+    console.log("✅ Banco OK (tabelas prontas)");
+  } catch (err) {
+    console.error("❌ Erro ao criar tabelas:", err.message);
   }
 };
 
-// ❗ Nunca criar tabelas em produção
+// ❗ NUNCA criar tabela em produção
 if (process.env.NODE_ENV !== "production") {
   createTables();
 }
@@ -98,26 +87,17 @@ if (process.env.NODE_ENV !== "production") {
 app.get("/", async (req, res) => {
   try {
     const { rows } = await db.query("SELECT NOW()");
-    res.status(200).send(`API ONLINE 🚀 ${rows[0].now}`);
-  } catch (error) {
-    console.error("❌ ERRO DB:", error);
-    res.status(500).json({ message: "Erro ao conectar ao banco" });
+    res.send(`API ONLINE 🚀 ${rows[0].now}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro no banco" });
   }
 });
 
-/* ================== MIDDLEWARE ERRO GLOBAL ================== */
+/* ================== ERRO GLOBAL ================== */
 app.use((err, req, res, next) => {
-  console.error("❌ ERRO GLOBAL:", err.message);
-
-  if (err.message === "Not allowed by CORS") {
-    return res.status(403).json({
-      message: "CORS bloqueado: origem não permitida"
-    });
-  }
-
-  return res.status(500).json({
-    message: "Erro interno do servidor"
-  });
+  console.error("❌ ERRO GLOBAL:", err);
+  res.status(500).json({ message: "Erro interno do servidor" });
 });
 
 /* ================== START ================== */
