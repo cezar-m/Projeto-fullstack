@@ -14,6 +14,9 @@ export default function Products() {
   const [imagem, setImagem] = useState(null);
   const [preview, setPreview] = useState(null);
 
+  // 🔍 NOVO ESTADO DE PESQUISA
+  const [pesquisa, setPesquisa] = useState("");
+
   useEffect(() => {
     fetchProdutos();
   }, []);
@@ -110,6 +113,11 @@ export default function Products() {
     fetchProdutos();
   };
 
+  // 🔍 FILTRO DE PESQUISA
+  const produtosFiltrados = produtos.filter((p) =>
+    p.nome.toLowerCase().includes(pesquisa.toLowerCase())
+  );
+
   return (
     <div>
       <Navbar />
@@ -132,8 +140,16 @@ export default function Products() {
 
         <hr />
 
+        {/* 🔍 INPUT DE PESQUISA */}
+        <input
+          className="form-control mb-3"
+          placeholder="Pesquisar pizza/produto..."
+          value={pesquisa}
+          onChange={(e) => setPesquisa(e.target.value)}
+        />
+
         <ul className="list-group">
-          {produtos.map((p) => (
+          {produtosFiltrados.map((p) => (
             <li key={p.id} className="list-group-item d-flex justify-content-between">
               <div className="d-flex gap-3">
                 {p.imagem && (
