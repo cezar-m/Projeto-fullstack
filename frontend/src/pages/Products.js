@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
 import api from "../api/api";
 
@@ -14,8 +14,11 @@ export default function Products() {
   const [imagem, setImagem] = useState(null);
   const [preview, setPreview] = useState(null);
 
-  // 🔍 NOVO ESTADO DE PESQUISA
   const [pesquisa, setPesquisa] = useState("");
+  const [ordemPreco, setOrdemPreco] = useState("");
+
+  // ref para limpar input file
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchProdutos();
@@ -69,6 +72,11 @@ export default function Products() {
     setDescricao("");
     setImagem(null);
     setPreview(null);
+
+    // limpar input file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const salvar = async () => {
@@ -93,7 +101,7 @@ export default function Products() {
 
       limparFormulario();
       fetchProdutos();
-    } catch (err) {
+    } catch {
       setErro("Erro ao salvar produto");
     }
   };
@@ -113,10 +121,18 @@ export default function Products() {
     fetchProdutos();
   };
 
-  // 🔍 FILTRO DE PESQUISA
-  const produtosFiltrados = produtos.filter((p) =>
+  // FILTRO + ORDENAÇÃO
+  let produtosFiltrados = produtos.filter((p) =>
     p.nome.toLowerCase().includes(pesquisa.toLowerCase())
   );
+
+  if (ordemPreco === "maior") {
+    produtosFiltrados.sort((a, b) => b.preco - a.preco);
+  }
+
+  if (ordemPreco === "menor") {
+    produtosFiltrados.sort((a, b) => a.preco - b.preco);
+  }
 
   return (
     <div>
@@ -130,7 +146,7 @@ export default function Products() {
         <input className="form-control mb-2" placeholder="Preço" value={formatarPrecoInput(preco)} onChange={handlePrecoChange} />
         <input className="form-control mb-2" type="number" placeholder="Quantidade" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
         <textarea className="form-control mb-2" placeholder="Descrição" value={descricao} onChange={(e) => setDescricao(e.target.value)} />
-        <input className="form-control mb-2" type="file" onChange={handleImagemChange} />
+        <input className="form-control mb-2" type="file" ref={fileInputRef} onChange={handleImagemChange} />
 
         {preview && <img src={preview} alt="preview" width="120" className="mb-2" />}
 
@@ -140,13 +156,24 @@ export default function Products() {
 
         <hr />
 
-        {/* 🔍 INPUT DE PESQUISA */}
+        {/* PESQUISA */}
         <input
-          className="form-control mb-3"
-          placeholder="Pesquisar pizza/produto..."
+          className="form-control mb-2"
+          placeholder="Pesquisar produto..."
           value={pesquisa}
           onChange={(e) => setPesquisa(e.target.value)}
         />
+
+        {/* ORDEM PREÇO */}
+        <select
+          className="form-control mb-3"
+          value={ordemPreco}
+          onChange={(e) => setOrdemPreco(e.target.value)}
+        >
+          <option value="">Ordenar por preço</option>
+          <option value="maior">Maior preço</option>
+          <option value="menor">Menor preço</option>
+        </select>
 
         <ul className="list-group">
           {produtosFiltrados.map((p) => (
