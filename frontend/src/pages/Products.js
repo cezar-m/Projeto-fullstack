@@ -15,9 +15,8 @@ export default function Products() {
   const [preview, setPreview] = useState(null);
 
   const [pesquisa, setPesquisa] = useState("");
-  const [ordemPreco, setOrdemPreco] = useState("");
+  const [filtroPreco, setFiltroPreco] = useState(""); // maior | menor
 
-  // ref para limpar input file
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -73,7 +72,6 @@ export default function Products() {
     setImagem(null);
     setPreview(null);
 
-    // limpar input file
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -121,17 +119,20 @@ export default function Products() {
     fetchProdutos();
   };
 
-  // FILTRO + ORDENAÇÃO
-  let produtosFiltrados = produtos.filter((p) =>
+  // FILTRO NOME
+  let lista = produtos.filter((p) =>
     p.nome.toLowerCase().includes(pesquisa.toLowerCase())
   );
 
-  if (ordemPreco === "maior") {
-    produtosFiltrados.sort((a, b) => b.preco - a.preco);
+  // FILTRO MAIOR / MENOR PREÇO
+  if (filtroPreco === "maior" && lista.length > 0) {
+    const maior = Math.max(...lista.map((p) => Number(p.preco)));
+    lista = lista.filter((p) => Number(p.preco) === maior);
   }
 
-  if (ordemPreco === "menor") {
-    produtosFiltrados.sort((a, b) => a.preco - b.preco);
+  if (filtroPreco === "menor" && lista.length > 0) {
+    const menor = Math.min(...lista.map((p) => Number(p.preco)));
+    lista = lista.filter((p) => Number(p.preco) === menor);
   }
 
   return (
@@ -164,19 +165,21 @@ export default function Products() {
           onChange={(e) => setPesquisa(e.target.value)}
         />
 
-        {/* ORDEM PREÇO */}
-        <select
-          className="form-control mb-3"
-          value={ordemPreco}
-          onChange={(e) => setOrdemPreco(e.target.value)}
-        >
-          <option value="">Ordenar por preço</option>
-          <option value="maior">Maior preço</option>
-          <option value="menor">Menor preço</option>
-        </select>
+        {/* BOTÕES MAIOR / MENOR */}
+        <div className="mb-3 d-flex gap-2">
+          <button className="btn btn-success btn-sm" onClick={() => setFiltroPreco("maior")}>
+            Maior Preço
+          </button>
+          <button className="btn btn-info btn-sm" onClick={() => setFiltroPreco("menor")}>
+            Menor Preço
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={() => setFiltroPreco("")}>
+            Limpar Filtro
+          </button>
+        </div>
 
         <ul className="list-group">
-          {produtosFiltrados.map((p) => (
+          {lista.map((p) => (
             <li key={p.id} className="list-group-item d-flex justify-content-between">
               <div className="d-flex gap-3">
                 {p.imagem && (
