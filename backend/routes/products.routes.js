@@ -6,13 +6,24 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 /* =========================
-   LISTAR PRODUTOS
+   LISTAR PRODUTOS DO USUÁRIO
 ========================= */
-router.get("/", async (req, res) => {
+router.get("/", authMiddleware, async (req, res) => {
   try {
-    const result = await db.query(
-      "SELECT * FROM produtos ORDER BY id DESC"
-    );
+    let result;
+
+    // ADMIN vê tudo
+    if (req.user.acesso === "admin") {
+      result = await db.query(
+        "SELECT * FROM produtos ORDER BY id DESC"
+      );
+    } else {
+      // Usuário comum vê só os dele
+      result = await db.query(
+        "SELECT * FROM produtos WHERE id_usuario = $1 ORDER BY id DESC",
+        [req.user.id]
+      );
+    }
 
     res.json(result.rows);
   } catch (err) {
@@ -42,7 +53,6 @@ router.post(
 
       let imagemUrl = null;
 
-      // upload da imagem para Cloudinary
       if (req.file) {
         const uploadResult = await uploadToCloudinary(
           req.file.buffer,
@@ -82,21 +92,19 @@ router.put(
       const { id } = req.params;
       const { nome, preco, descricao, quantidade } = req.body;
 
-      // verifica se o produto pertence ao usuário
       const produtoAtual = await db.query(
         "SELECT * FROM produtos WHERE id = $1 AND id_usuario = $2",
         [id, req.user.id]
       );
 
-      if (produtoAtual.rowCount === 0) {
+      if (produtoAtual.rowCount === 0 && req.user.acesso !== "admin") {
         return res.status(404).json({
           message: "Produto não encontrado ou sem permissão",
         });
       }
 
-      let imagemUrl = produtoAtual.rows[0].imagem;
+      let imagemUrl = produtoAtual.rows[0]?.imagem || null;
 
-      // se enviar nova imagem, substitui
       if (req.file) {
         const uploadResult = await uploadToCloudinary(
           req.file.buffer,
@@ -113,7 +121,7 @@ router.put(
             descricao = $3,
             quantidade = $4,
             imagem = $5
-        WHERE id = $6 AND id_usuario = $7
+        WHERE id = $6
         RETURNING *
         `,
         [
@@ -123,7 +131,6 @@ router.put(
           quantidade,
           imagemUrl,
           id,
-          req.user.id,
         ]
       );
 
@@ -144,11 +151,19 @@ router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // verifica se o produto pertence ao usuário logado
-    const produto = await db.query(
-      "SELECT id FROM produtos WHERE id = $1 AND id_usuario = $2",
-      [id, req.user.id]
-    );
+    let produto;
+
+    if (req.user.acesso === "admin") {
+      produto = await db.query(
+        "SELECT id FROM produtos WHERE id = $1",
+        [id]
+      );
+    } else {
+      produto = await db.query(
+        "SELECT id FROM produtos WHERE id = $1 AND id_usuario = $2",
+        [id, req.user.id]
+      );
+    }
 
     if (produto.rowCount === 0) {
       return res.status(404).json({
@@ -156,10 +171,9 @@ router.delete("/:id", authMiddleware, async (req, res) => {
       });
     }
 
-    // exclui o produto
     await db.query(
-      "DELETE FROM produtos WHERE id = $1 AND id_usuario = $2",
-      [id, req.user.id]
+      "DELETE FROM produtos WHERE id = $1",
+      [id]
     );
 
     res.json({
