@@ -1,13 +1,11 @@
-// db.js
 import pkg from "pg";
-import dotenv from "dotenv";
-dotenv.config();
-
 const { Pool } = pkg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  ssl: { rejectUnauthorized: false }, // obrigatório para Supabase
 });
 
-export default pool;
+pool.query("SELECT NOW()")
+  .then(res => console.log("Conectado ao banco Supabase:", res.rows[0]))
+  .catch(err => console.error("Erro de conexão:", err));
