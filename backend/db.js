@@ -1,3 +1,4 @@
+// db.js
 import pkg from "pg";
 import dotenv from "dotenv";
 
@@ -7,8 +8,8 @@ const { Pool } = pkg;
 
 const db = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-  max: 5,
+  ssl: { rejectUnauthorized: false }, // 🔑 SSL obrigatório no Render/Supabase
+  max: 5, // máximo de conexões simultâneas
 });
 
 db.on("error", (err) => {
