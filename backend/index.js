@@ -85,13 +85,13 @@ if (process.env.NODE_ENV !== "production") {
   createTables();
 }
 
-/* ================== ROTA TESTE ================== */
+/* ================== TESTE BANCO ================== */
 app.get("/", async (req, res) => {
   try {
     const { rows } = await db.query("SELECT NOW()");
     res.send(`API ONLINE 🚀 ${rows[0].now}`);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Erro ao conectar no banco:", err);
     res.status(500).json({ message: "Erro no banco" });
   }
 });
@@ -105,6 +105,14 @@ app.use((err, req, res, next) => {
 /* ================== START ================== */
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, "0.0.0.0", async () => {
   console.log(`🚀 API rodando na porta ${PORT}`);
+
+  // Teste rápido de conexão
+  try {
+    const { rows } = await db.query("SELECT NOW()");
+    console.log("✅ Banco conectado:", rows[0].now);
+  } catch (err) {
+    console.error("❌ Falha na conexão com o banco:", err);
+  }
 });
