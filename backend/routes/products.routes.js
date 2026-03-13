@@ -6,10 +6,14 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 /* =========================
-   LISTAR PRODUTOS + PESQUISA + ORDEM
+   LISTAR PRODUTOS
 ========================= */
 router.get("/", authMiddleware, async (req, res) => {
   try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
     const { search, order } = req.query;
 
     let query = `
@@ -20,14 +24,12 @@ router.get("/", authMiddleware, async (req, res) => {
     const values = [req.user.id];
     let index = 2;
 
-    // 🔍 PESQUISA POR NOME
     if (search) {
       query += ` AND LOWER(nome) LIKE LOWER($${index})`;
       values.push(`%${search}%`);
       index++;
     }
 
-    // 💰 ORDENAR PREÇO
     if (order === "maior") {
       query += ` ORDER BY preco DESC`;
     } else if (order === "menor") {
@@ -39,13 +41,13 @@ router.get("/", authMiddleware, async (req, res) => {
     const result = await db.query(query, values);
 
     res.json(result.rows);
+
   } catch (err) {
     console.error("Erro ao listar produtos:", err);
-    res.status(500).json({
-      message: "Erro ao listar produtos",
-    });
+    res.status(500).json({ message: err.message });
   }
 });
+
 
 /* =========================
    CRIAR PRODUTO
@@ -56,6 +58,11 @@ router.post(
   upload.single("imagem"),
   async (req, res) => {
     try {
+
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+
       const { nome, preco, descricao, quantidade } = req.body;
 
       if (!nome || !preco || !descricao || !quantidade) {
@@ -76,22 +83,32 @@ router.post(
 
       const result = await db.query(
         `
-        INSERT INTO produtos (nome, preco, descricao, quantidade, imagem, id_usuario)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO produtos
+        (nome, preco, descricao, quantidade, imagem, id_usuario)
+        VALUES ($1,$2,$3,$4,$5,$6)
         RETURNING *
         `,
-        [nome, preco, descricao, quantidade, imagemUrl, req.user.id]
+        [
+          nome,
+          parseFloat(preco),
+          descricao,
+          parseInt(quantidade),
+          imagemUrl,
+          req.user.id
+        ]
       );
 
       res.status(201).json(result.rows[0]);
+
     } catch (err) {
       console.error("Erro ao criar produto:", err);
       res.status(500).json({
-        message: "Erro ao criar produto",
+        message: err.message
       });
     }
   }
 );
+
 
 /* =========================
    ATUALIZAR PRODUTO
@@ -102,6 +119,11 @@ router.put(
   upload.single("imagem"),
   async (req, res) => {
     try {
+
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+
       const { id } = req.params;
       const { nome, preco, descricao, quantidade } = req.body;
 
@@ -129,65 +151,73 @@ router.put(
       const result = await db.query(
         `
         UPDATE produtos
-        SET nome = $1,
-            preco = $2,
-            descricao = $3,
-            quantidade = $4,
-            imagem = $5
-        WHERE id = $6 AND id_usuario = $7
+        SET nome=$1,
+            preco=$2,
+            descricao=$3,
+            quantidade=$4,
+            imagem=$5
+        WHERE id=$6 AND id_usuario=$7
         RETURNING *
         `,
         [
           nome,
-          preco,
+          parseFloat(preco),
           descricao,
-          quantidade,
+          parseInt(quantidade),
           imagemUrl,
           id,
-          req.user.id,
+          req.user.id
         ]
       );
 
       res.json(result.rows[0]);
+
     } catch (err) {
       console.error("Erro ao atualizar produto:", err);
       res.status(500).json({
-        message: "Erro ao atualizar produto",
+        message: err.message
       });
     }
   }
 );
+
 
 /* =========================
    EXCLUIR PRODUTO
 ========================= */
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
+
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
     const { id } = req.params;
 
     const produto = await db.query(
-      "SELECT id FROM produtos WHERE id = $1 AND id_usuario = $2",
+      "SELECT id FROM produtos WHERE id=$1 AND id_usuario=$2",
       [id, req.user.id]
     );
 
     if (produto.rowCount === 0) {
       return res.status(404).json({
-        message: "Produto não encontrado ou sem permissão",
+        message: "Produto não encontrado ou sem permissão"
       });
     }
 
     await db.query(
-      "DELETE FROM produtos WHERE id = $1 AND id_usuario = $2",
+      "DELETE FROM produtos WHERE id=$1 AND id_usuario=$2",
       [id, req.user.id]
     );
 
     res.json({
-      message: "Produto excluído com sucesso",
+      message: "Produto excluído com sucesso"
     });
+
   } catch (err) {
     console.error("Erro ao excluir produto:", err);
     res.status(500).json({
-      message: "Erro ao excluir produto",
+      message: err.message
     });
   }
 });
