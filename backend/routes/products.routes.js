@@ -15,12 +15,7 @@ router.get("/", authMiddleware, async (req, res) => {
     }
 
     const { search, order } = req.query;
-
-    let query = `
-      SELECT * FROM produtos
-      WHERE id_usuario = $1
-    `;
-
+    let query = `SELECT * FROM produtos WHERE id_usuario = $1`;
     const values = [req.user.id];
     let index = 2;
 
@@ -30,16 +25,11 @@ router.get("/", authMiddleware, async (req, res) => {
       index++;
     }
 
-    if (order === "maior") {
-      query += ` ORDER BY preco DESC`;
-    } else if (order === "menor") {
-      query += ` ORDER BY preco ASC`;
-    } else {
-      query += ` ORDER BY id DESC`;
-    }
+    if (order === "maior") query += " ORDER BY preco DESC";
+    else if (order === "menor") query += " ORDER BY preco ASC";
+    else query += " ORDER BY id DESC";
 
     const result = await db.query(query, values);
-
     res.json(result.rows);
 
   } catch (err) {
@@ -48,145 +38,123 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-
 /* =========================
    CRIAR PRODUTO
 ========================= */
-router.post(
-  "/",
-  authMiddleware,
-  upload.single("imagem"),
-  async (req, res) => {
-    try {
+router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
+  try {
+    console.log("REQ.USER:", req.user);
+    console.log("REQ.BODY:", req.body);
+    console.log("REQ.FILE:", req.file);
 
-      if (!req.user || !req.user.id) {
-        return res.status(401).json({ message: "Usuário não autenticado" });
-      }
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
 
-      const { nome, preco, descricao, quantidade } = req.body;
+    const { nome, preco, descricao, quantidade } = req.body;
 
-      if (!nome || !preco || !descricao || !quantidade) {
-        return res.status(400).json({
-          message: "Dados incompletos",
-        });
-      }
+    if (!nome || !preco || !descricao || !quantidade) {
+      return res.status(400).json({ message: "Dados incompletos" });
+    }
 
-      let imagemUrl = null;
+    let imagemUrl = null;
 
-      if (req.file) {
-        const uploadResult = await uploadToCloudinary(
-          req.file.buffer,
-          "produtos"
-        );
+    if (req.file && req.file.buffer) {
+      try {
+        const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
         imagemUrl = uploadResult.secure_url;
+      } catch (err) {
+        console.error("Erro Cloudinary:", err);
+        return res.status(500).json({ message: "Falha ao enviar imagem" });
       }
+    }
 
-      const result = await db.query(
-        `
-        INSERT INTO produtos
+    const result = await db.query(
+      `INSERT INTO produtos
         (nome, preco, descricao, quantidade, imagem, id_usuario)
         VALUES ($1,$2,$3,$4,$5,$6)
-        RETURNING *
-        `,
-        [
-          nome,
-          parseFloat(preco),
-          descricao,
-          parseInt(quantidade),
-          imagemUrl,
-          req.user.id
-        ]
-      );
+        RETURNING *`,
+      [
+        nome,
+        parseFloat(preco),
+        descricao,
+        parseInt(quantidade),
+        imagemUrl,
+        req.user.id
+      ]
+    );
 
-      res.status(201).json(result.rows[0]);
+    res.status(201).json(result.rows[0]);
 
-    } catch (err) {
-      console.error("Erro ao criar produto:", err);
-      res.status(500).json({
-        message: err.message
-      });
-    }
+  } catch (err) {
+    console.error("Erro ao criar produto:", err);
+    res.status(500).json({ message: err.message });
   }
-);
-
+});
 
 /* =========================
    ATUALIZAR PRODUTO
 ========================= */
-router.put(
-  "/:id",
-  authMiddleware,
-  upload.single("imagem"),
-  async (req, res) => {
-    try {
+router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => {
+  try {
+    console.log("REQ.USER:", req.user);
+    console.log("REQ.BODY:", req.body);
+    console.log("REQ.FILE:", req.file);
 
-      if (!req.user || !req.user.id) {
-        return res.status(401).json({ message: "Usuário não autenticado" });
-      }
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
 
-      const { id } = req.params;
-      const { nome, preco, descricao, quantidade } = req.body;
+    const { id } = req.params;
+    const { nome, preco, descricao, quantidade } = req.body;
 
-      const produtoAtual = await db.query(
-        "SELECT * FROM produtos WHERE id = $1 AND id_usuario = $2",
-        [id, req.user.id]
-      );
+    const produtoAtual = await db.query(
+      "SELECT * FROM produtos WHERE id=$1 AND id_usuario=$2",
+      [id, req.user.id]
+    );
 
-      if (produtoAtual.rowCount === 0) {
-        return res.status(404).json({
-          message: "Produto não encontrado ou sem permissão",
-        });
-      }
+    if (produtoAtual.rowCount === 0) {
+      return res.status(404).json({ message: "Produto não encontrado ou sem permissão" });
+    }
 
-      let imagemUrl = produtoAtual.rows[0].imagem;
+    let imagemUrl = produtoAtual.rows[0].imagem;
 
-      if (req.file) {
-        const uploadResult = await uploadToCloudinary(
-          req.file.buffer,
-          "produtos"
-        );
+    if (req.file && req.file.buffer) {
+      try {
+        const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
         imagemUrl = uploadResult.secure_url;
+      } catch (err) {
+        console.error("Erro Cloudinary:", err);
+        return res.status(500).json({ message: "Falha ao enviar imagem" });
       }
+    }
 
-      const result = await db.query(
-        `
-        UPDATE produtos
+    const result = await db.query(
+      `UPDATE produtos
         SET nome=$1,
             preco=$2,
             descricao=$3,
             quantidade=$4,
             imagem=$5
         WHERE id=$6 AND id_usuario=$7
-        RETURNING *
-        `,
-        [
-          nome,
-          parseFloat(preco),
-          descricao,
-          parseInt(quantidade),
-          imagemUrl,
-          id,
-          req.user.id
-        ]
-      );
+        RETURNING *`,
+      [nome, parseFloat(preco), descricao, parseInt(quantidade), imagemUrl, id, req.user.id]
+    );
 
-      res.json(result.rows[0]);
+    res.json(result.rows[0]);
 
-    } catch (err) {
-      console.error("Erro ao atualizar produto:", err);
-      res.status(500).json({
-        message: err.message
-      });
-    }
+  } catch (err) {
+    console.error("Erro ao atualizar produto:", err);
+    res.status(500).json({ message: err.message });
   }
-);
-
+});
 
 /* =========================
    EXCLUIR PRODUTO
 ========================= */
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
+    console.log("REQ.USER:", req.user);
 
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: "Usuário não autenticado" });
@@ -200,9 +168,7 @@ router.delete("/:id", authMiddleware, async (req, res) => {
     );
 
     if (produto.rowCount === 0) {
-      return res.status(404).json({
-        message: "Produto não encontrado ou sem permissão"
-      });
+      return res.status(404).json({ message: "Produto não encontrado ou sem permissão" });
     }
 
     await db.query(
@@ -210,15 +176,11 @@ router.delete("/:id", authMiddleware, async (req, res) => {
       [id, req.user.id]
     );
 
-    res.json({
-      message: "Produto excluído com sucesso"
-    });
+    res.json({ message: "Produto excluído com sucesso" });
 
   } catch (err) {
     console.error("Erro ao excluir produto:", err);
-    res.status(500).json({
-      message: err.message
-    });
+    res.status(500).json({ message: err.message });
   }
 });
 
