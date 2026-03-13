@@ -1,6 +1,5 @@
 import express from "express";
 import db from "../db.js";
-import { upload, uploadToCloudinary } from "../middleware/upload.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -10,12 +9,7 @@ const router = express.Router();
 ========================= */
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    if (!req.user?.id) {
-      return res.status(401).json({ message: "Usuário não autenticado" });
-    }
-
     const { search, order } = req.query;
-
     let query = `SELECT * FROM produtos WHERE id_usuario = $1`;
     const values = [req.user.id];
     let index = 2;
@@ -26,13 +20,12 @@ router.get("/", authMiddleware, async (req, res) => {
       index++;
     }
 
-    if (order === "maior") query += " ORDER BY preco DESC";
-    else if (order === "menor") query += " ORDER BY preco ASC";
-    else query += " ORDER BY id DESC";
+    if (order === "maior") query += ` ORDER BY preco DESC`;
+    else if (order === "menor") query += ` ORDER BY preco ASC`;
+    else query += ` ORDER BY id DESC`;
 
     const result = await db.query(query, values);
     res.json(result.rows);
-
   } catch (err) {
     console.error("Erro ao listar produtos:", err);
     res.status(500).json({ message: err.message });
@@ -42,33 +35,21 @@ router.get("/", authMiddleware, async (req, res) => {
 /* =========================
    CRIAR PRODUTO
 ========================= */
-router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
+router.post("/", authMiddleware, async (req, res) => {
   try {
-    if (!req.user?.id) return res.status(401).json({ message: "Usuário não autenticado" });
+    const { nome, preco, descricao, quantidade, imagem } = req.body;
 
-    const { nome, preco, descricao, quantidade } = req.body;
-
-    const precoFloat = parseFloat(preco);
-    const quantidadeInt = parseInt(quantidade);
-
-    if (!nome || !descricao || isNaN(precoFloat) || isNaN(quantidadeInt)) {
-      return res.status(400).json({ message: "Dados inválidos" });
-    }
-
-    let imagemUrl = null;
-    if (req.file?.buffer) {
-      const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
-      imagemUrl = uploadResult.secure_url;
+    if (!nome || !preco || !descricao || !quantidade) {
+      return res.status(400).json({ message: "Dados incompletos" });
     }
 
     const result = await db.query(
       `INSERT INTO produtos (nome, preco, descricao, quantidade, imagem, id_usuario)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [nome, precoFloat, descricao, quantidadeInt, imagemUrl, req.user.id]
+      [nome, parseFloat(preco), descricao, parseInt(quantidade), imagem || null, req.user.id]
     );
 
     res.status(201).json(result.rows[0]);
-
   } catch (err) {
     console.error("Erro ao criar produto:", err);
     res.status(500).json({ message: err.message });
@@ -78,41 +59,28 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
 /* =========================
    ATUALIZAR PRODUTO
 ========================= */
-router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => {
+router.put("/:id", authMiddleware, async (req, res) => {
   try {
-    if (!req.user?.id) return res.status(401).json({ message: "Usuário não autenticado" });
-
     const { id } = req.params;
-    const { nome, preco, descricao, quantidade } = req.body;
+    const { nome, preco, descricao, quantidade, imagem } = req.body;
 
     const produtoAtual = await db.query(
       "SELECT * FROM produtos WHERE id=$1 AND id_usuario=$2",
       [id, req.user.id]
     );
 
-    if (produtoAtual.rowCount === 0) {
+    if (produtoAtual.rowCount === 0)
       return res.status(404).json({ message: "Produto não encontrado ou sem permissão" });
-    }
-
-    const precoFloat = parseFloat(preco);
-    const quantidadeInt = parseInt(quantidade);
-
-    let imagemUrl = produtoAtual.rows[0].imagem;
-    if (req.file?.buffer) {
-      const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
-      imagemUrl = uploadResult.secure_url;
-    }
 
     const result = await db.query(
       `UPDATE produtos
        SET nome=$1, preco=$2, descricao=$3, quantidade=$4, imagem=$5
        WHERE id=$6 AND id_usuario=$7
        RETURNING *`,
-      [nome, precoFloat, descricao, quantidadeInt, imagemUrl, id, req.user.id]
+      [nome, parseFloat(preco), descricao, parseInt(quantidade), imagem || null, id, req.user.id]
     );
 
     res.json(result.rows[0]);
-
   } catch (err) {
     console.error("Erro ao atualizar produto:", err);
     res.status(500).json({ message: err.message });
@@ -124,22 +92,17 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
 ========================= */
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
-    if (!req.user?.id) return res.status(401).json({ message: "Usuário não autenticado" });
-
     const { id } = req.params;
-
     const produto = await db.query(
       "SELECT id FROM produtos WHERE id=$1 AND id_usuario=$2",
       [id, req.user.id]
     );
 
-    if (produto.rowCount === 0) {
+    if (produto.rowCount === 0)
       return res.status(404).json({ message: "Produto não encontrado ou sem permissão" });
-    }
 
     await db.query("DELETE FROM produtos WHERE id=$1 AND id_usuario=$2", [id, req.user.id]);
     res.json({ message: "Produto excluído com sucesso" });
-
   } catch (err) {
     console.error("Erro ao excluir produto:", err);
     res.status(500).json({ message: err.message });
