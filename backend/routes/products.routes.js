@@ -10,9 +10,12 @@ const router = express.Router();
 ========================= */
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    if (!req.user?.id) return res.status(401).json({ message: "Usuário não autenticado" });
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
 
     const { search, order } = req.query;
+
     let query = `SELECT * FROM produtos WHERE id_usuario = $1`;
     const values = [req.user.id];
     let index = 2;
@@ -32,7 +35,7 @@ router.get("/", authMiddleware, async (req, res) => {
 
   } catch (err) {
     console.error("Erro ao listar produtos:", err);
-    res.status(500).json({ message: "Erro interno ao listar produtos" });
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -45,36 +48,22 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
 
     const { nome, preco, descricao, quantidade } = req.body;
 
-    // ✅ Validação simples
-    if (!nome || !preco || !descricao || !quantidade) {
-      return res.status(400).json({ message: "Todos os campos são obrigatórios" });
-    }
-
     const precoFloat = parseFloat(preco);
     const quantidadeInt = parseInt(quantidade);
 
-    if (isNaN(precoFloat) || isNaN(quantidadeInt)) {
-      return res.status(400).json({ message: "Preço ou quantidade inválidos" });
+    if (!nome || !descricao || isNaN(precoFloat) || isNaN(quantidadeInt)) {
+      return res.status(400).json({ message: "Dados inválidos" });
     }
 
     let imagemUrl = null;
-
-    // ✅ Upload seguro para Cloudinary
     if (req.file?.buffer) {
-      try {
-        const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
-        imagemUrl = uploadResult.secure_url;
-      } catch (err) {
-        console.error("Erro ao enviar imagem para Cloudinary:", err);
-        return res.status(500).json({ message: "Erro ao enviar imagem" });
-      }
+      const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
+      imagemUrl = uploadResult.secure_url;
     }
 
     const result = await db.query(
-      `INSERT INTO produtos
-      (nome, preco, descricao, quantidade, imagem, id_usuario)
-      VALUES ($1,$2,$3,$4,$5,$6)
-      RETURNING *`,
+      `INSERT INTO produtos (nome, preco, descricao, quantidade, imagem, id_usuario)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
       [nome, precoFloat, descricao, quantidadeInt, imagemUrl, req.user.id]
     );
 
@@ -82,7 +71,7 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
 
   } catch (err) {
     console.error("Erro ao criar produto:", err);
-    res.status(500).json({ message: "Erro interno ao criar produto" });
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -108,20 +97,10 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
     const precoFloat = parseFloat(preco);
     const quantidadeInt = parseInt(quantidade);
 
-    if (!nome || isNaN(precoFloat) || !descricao || isNaN(quantidadeInt)) {
-      return res.status(400).json({ message: "Dados inválidos" });
-    }
-
     let imagemUrl = produtoAtual.rows[0].imagem;
-
     if (req.file?.buffer) {
-      try {
-        const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
-        imagemUrl = uploadResult.secure_url;
-      } catch (err) {
-        console.error("Erro ao enviar imagem para Cloudinary:", err);
-        return res.status(500).json({ message: "Erro ao enviar imagem" });
-      }
+      const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
+      imagemUrl = uploadResult.secure_url;
     }
 
     const result = await db.query(
@@ -136,7 +115,7 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
 
   } catch (err) {
     console.error("Erro ao atualizar produto:", err);
-    res.status(500).json({ message: "Erro interno ao atualizar produto" });
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -158,16 +137,12 @@ router.delete("/:id", authMiddleware, async (req, res) => {
       return res.status(404).json({ message: "Produto não encontrado ou sem permissão" });
     }
 
-    await db.query(
-      "DELETE FROM produtos WHERE id=$1 AND id_usuario=$2",
-      [id, req.user.id]
-    );
-
+    await db.query("DELETE FROM produtos WHERE id=$1 AND id_usuario=$2", [id, req.user.id]);
     res.json({ message: "Produto excluído com sucesso" });
 
   } catch (err) {
     console.error("Erro ao excluir produto:", err);
-    res.status(500).json({ message: "Erro interno ao excluir produto" });
+    res.status(500).json({ message: err.message });
   }
 });
 
