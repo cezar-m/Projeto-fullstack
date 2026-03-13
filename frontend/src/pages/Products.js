@@ -1,13 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
-import api from "../api/api";
-import { createClient } from "@supabase/supabase-js";
-
-// ⚡ Configure seu Supabase
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_ANON_KEY
-);
+import api from "../api/api"; // Axios configurado com token
 
 export default function Products() {
   const [produtos, setProdutos] = useState([]);
@@ -22,7 +15,7 @@ export default function Products() {
   const [preview, setPreview] = useState(null);
 
   const [pesquisa, setPesquisa] = useState("");
-  const [filtroPreco, setFiltroPreco] = useState(""); // maior | menor
+  const [filtroPreco, setFiltroPreco] = useState("");
 
   const fileInputRef = useRef(null);
 
@@ -34,7 +27,8 @@ export default function Products() {
     try {
       const res = await api.get("/products");
       setProdutos(res.data);
-    } catch {
+    } catch (err) {
+      console.error(err);
       setErro("Erro ao carregar produtos");
     }
   };
@@ -79,30 +73,7 @@ export default function Products() {
     setImagem(null);
     setPreview(null);
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  // ⚡ Função para fazer upload da imagem para Supabase
-  const uploadImagemSupabase = async (file) => {
-    if (!file) return null;
-
-    const fileName = `${Date.now()}_${file.name}`;
-    const { data, error } = await supabase.storage
-      .from("produtos")
-      .upload(fileName, file);
-
-    if (error) {
-      console.error("Erro ao enviar imagem:", error.message);
-      return null;
-    }
-
-    const publicURL = supabase.storage
-      .from("produtos")
-      .getPublicUrl(data.path).data.publicUrl;
-
-    return publicURL;
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const salvar = async () => {
@@ -111,24 +82,12 @@ export default function Products() {
       return;
     }
 
-    setErro("");
-
-    let imagemUrl = preview; // se já tem preview (edição), usa ela
-    if (imagem) {
-      const url = await uploadImagemSupabase(imagem);
-      if (!url) {
-        setErro("Erro ao enviar imagem");
-        return;
-      }
-      imagemUrl = url;
-    }
-
     const formData = new FormData();
     formData.append("nome", nome);
     formData.append("preco", Number(preco) / 100);
     formData.append("quantidade", quantidade);
     formData.append("descricao", descricao);
-    formData.append("imagem", imagemUrl);
+    if (imagem) formData.append("imagem", imagem);
 
     try {
       if (idEditar) {
@@ -139,7 +98,8 @@ export default function Products() {
 
       limparFormulario();
       fetchProdutos();
-    } catch {
+    } catch (err) {
+      console.error(err);
       setErro("Erro ao salvar produto");
     }
   };
@@ -150,16 +110,18 @@ export default function Products() {
     setPreco(String(Math.round(p.preco * 100)));
     setQuantidade(p.quantidade);
     setDescricao(p.descricao);
-
-    // Garante que a URL da imagem seja completa
     setPreview(p.imagem || null);
-    setImagem(null);
   };
 
   const excluirProduto = async (id) => {
     if (!window.confirm("Deseja excluir?")) return;
-    await api.delete(`/products/${id}`);
-    fetchProdutos();
+    try {
+      await api.delete(`/products/${id}`);
+      fetchProdutos();
+    } catch (err) {
+      console.error(err);
+      setErro("Erro ao excluir produto");
+    }
   };
 
   // FILTRO NOME
@@ -219,7 +181,13 @@ export default function Products() {
         />
 
         {preview && (
-          <img src={preview} alt="preview" width="120" className="mb-2" />
+          <img
+            src={preview}
+            alt="preview"
+            width="120"
+            className="mb-2"
+            style={{ objectFit: "cover" }}
+          />
         )}
 
         <button className="btn btn-primary mb-3" onClick={salvar}>
@@ -262,9 +230,9 @@ export default function Products() {
           {lista.map((p) => (
             <li
               key={p.id}
-              className="list-group-item d-flex justify-content-between"
+              className="list-group-item d-flex justify-content-between align-items-center"
             >
-              <div className="d-flex gap-3">
+              <div className="d-flex gap-3 align-items-center">
                 {p.imagem && (
                   <img
                     src={p.imagem}
@@ -280,6 +248,7 @@ export default function Products() {
                   <small>Qtd: {p.quantidade}</small>
                 </div>
               </div>
+
               <div>
                 <button
                   className="btn btn-warning btn-sm me-2"
