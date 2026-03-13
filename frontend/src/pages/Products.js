@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
-import api from "../api/api"; // Axios com token
+import api from "../api/api";
 
 export default function Products() {
   const [produtos, setProdutos] = useState([]);
@@ -8,7 +8,7 @@ export default function Products() {
 
   const [idEditar, setIdEditar] = useState(null);
   const [nome, setNome] = useState("");
-  const [preco, setPreco] = useState(""); // em centavos
+  const [preco, setPreco] = useState(""); // centavos
   const [quantidade, setQuantidade] = useState("");
   const [descricao, setDescricao] = useState("");
   const [imagem, setImagem] = useState(null);
@@ -23,7 +23,6 @@ export default function Products() {
     fetchProdutos();
   }, []);
 
-  // Buscar produtos
   const fetchProdutos = async () => {
     try {
       const res = await api.get("/products");
@@ -34,22 +33,16 @@ export default function Products() {
     }
   };
 
-  // Input preço em centavos
-  const handlePrecoChange = (e) => {
-    const onlyNumbers = e.target.value.replace(/\D/g, "");
-    setPreco(onlyNumbers);
-  };
+  const handlePrecoChange = (e) => setPreco(e.target.value.replace(/\D/g, ""));
 
-  // Formatação input (R$ 12,34)
   const formatarPrecoInput = (valor) => {
     if (!valor) return "";
-    return (Number(valor) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    return (Number(valor)/100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
 
-  // Formatação lista
-  const formatarPrecoLista = (valor) => Number(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const formatarPrecoLista = (valor) =>
+    Number(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-  // Preview da imagem
   const handleImagemChange = (e) => {
     const file = e.target.files[0];
     setImagem(file);
@@ -60,28 +53,18 @@ export default function Products() {
     } else setPreview(null);
   };
 
-  // Limpar form
   const limparFormulario = () => {
     setIdEditar(null);
-    setNome("");
-    setPreco("");
-    setQuantidade("");
-    setDescricao("");
-    setImagem(null);
-    setPreview(null);
+    setNome(""); setPreco(""); setQuantidade(""); setDescricao(""); setImagem(null); setPreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // Salvar produto
   const salvar = async () => {
-    if (!nome || !preco || !quantidade || !descricao) {
-      setErro("Preencha todos os campos");
-      return;
-    }
+    if (!nome || !preco || !quantidade || !descricao) { setErro("Preencha todos os campos"); return; }
 
     const formData = new FormData();
     formData.append("nome", nome);
-    formData.append("preco", (Number(preco) / 100).toFixed(2)); // envia número decimal correto
+    formData.append("preco", Number(preco)/100); // <-- número real
     formData.append("quantidade", quantidade);
     formData.append("descricao", descricao);
     if (imagem) formData.append("imagem", imagem);
@@ -89,49 +72,32 @@ export default function Products() {
     try {
       if (idEditar) await api.put(`/products/${idEditar}`, formData);
       else await api.post("/products", formData);
-
       limparFormulario();
       fetchProdutos();
     } catch (err) {
-      console.error(err);
+      console.error("Erro no salvar produto:", err.response?.data || err);
       setErro("Erro ao salvar produto");
     }
   };
 
-  // Editar produto
   const editarProduto = (p) => {
     setIdEditar(p.id);
     setNome(p.nome);
-    setPreco(String(Math.round(Number(p.preco) * 100))); // converte decimal para centavos
+    setPreco(String(Math.round(Number(p.preco)*100))); // centavos
     setQuantidade(p.quantidade);
     setDescricao(p.descricao);
     setPreview(p.imagem || null);
   };
 
-  // Excluir produto
   const excluirProduto = async (id) => {
     if (!window.confirm("Deseja excluir?")) return;
-    try {
-      await api.delete(`/products/${id}`);
-      fetchProdutos();
-    } catch (err) {
-      console.error(err);
-      setErro("Erro ao excluir produto");
-    }
+    try { await api.delete(`/products/${id}`); fetchProdutos(); }
+    catch(err){ console.error(err); setErro("Erro ao excluir produto"); }
   };
 
-  // Filtrar produtos
   let lista = produtos.filter(p => p.nome.toLowerCase().includes(pesquisa.toLowerCase()));
-
-  if (filtroPreco === "maior" && lista.length > 0) {
-    const maior = Math.max(...lista.map(p => Number(p.preco)));
-    lista = lista.filter(p => Number(p.preco) === maior);
-  }
-
-  if (filtroPreco === "menor" && lista.length > 0) {
-    const menor = Math.min(...lista.map(p => Number(p.preco)));
-    lista = lista.filter(p => Number(p.preco) === menor);
-  }
+  if (filtroPreco === "maior") lista = lista.filter(p => Number(p.preco) === Math.max(...lista.map(p => Number(p.preco))));
+  if (filtroPreco === "menor") lista = lista.filter(p => Number(p.preco) === Math.min(...lista.map(p => Number(p.preco))));
 
   return (
     <div>
@@ -145,27 +111,24 @@ export default function Products() {
         <input className="form-control mb-2" type="number" placeholder="Quantidade" value={quantidade} onChange={e => setQuantidade(e.target.value)} />
         <textarea className="form-control mb-2" placeholder="Descrição" value={descricao} onChange={e => setDescricao(e.target.value)} />
         <input className="form-control mb-2" type="file" ref={fileInputRef} onChange={handleImagemChange} />
-        {preview && <img src={preview} alt="preview" width="120" className="mb-2" style={{ objectFit: "cover" }} />}
+        {preview && <img src={preview} alt="preview" width="120" style={{ objectFit:"cover" }} className="mb-2"/>}
 
-        <button className="btn btn-primary mb-3" onClick={salvar}>
-          {idEditar ? "Salvar Alterações" : "Cadastrar Produto"}
-        </button>
+        <button className="btn btn-primary mb-3" onClick={salvar}>{idEditar ? "Salvar Alterações" : "Cadastrar Produto"}</button>
 
         <hr />
-
-        <input className="form-control mb-2" placeholder="Pesquisar..." value={pesquisa} onChange={e => setPesquisa(e.target.value)} />
+        <input className="form-control mb-2" placeholder="Pesquisar produto..." value={pesquisa} onChange={e=>setPesquisa(e.target.value)} />
 
         <div className="mb-3 d-flex gap-2">
-          <button className="btn btn-success btn-sm" onClick={() => setFiltroPreco("maior")}>Maior Preço</button>
-          <button className="btn btn-info btn-sm" onClick={() => setFiltroPreco("menor")}>Menor Preço</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => setFiltroPreco("")}>Limpar Filtro</button>
+          <button className="btn btn-success btn-sm" onClick={()=>setFiltroPreco("maior")}>Maior Preço</button>
+          <button className="btn btn-info btn-sm" onClick={()=>setFiltroPreco("menor")}>Menor Preço</button>
+          <button className="btn btn-secondary btn-sm" onClick={()=>setFiltroPreco("")}>Limpar Filtro</button>
         </div>
 
         <ul className="list-group">
-          {lista.map(p => (
+          {lista.map(p=>(
             <li key={p.id} className="list-group-item d-flex justify-content-between align-items-center">
               <div className="d-flex gap-3 align-items-center">
-                <img src={p.imagem || "https://via.placeholder.com/70"} alt={p.nome} width="70" height="70" style={{ objectFit: "cover" }} />
+                <img src={p.imagem || "https://via.placeholder.com/70"} alt={p.nome} width="70" height="70" style={{objectFit:"cover"}} />
                 <div>
                   <strong>{p.nome}</strong>
                   <div>{formatarPrecoLista(p.preco)}</div>
@@ -173,8 +136,8 @@ export default function Products() {
                 </div>
               </div>
               <div>
-                <button className="btn btn-warning btn-sm me-2" onClick={() => editarProduto(p)}>Editar</button>
-                <button className="btn btn-danger btn-sm" onClick={() => excluirProduto(p.id)}>Excluir</button>
+                <button className="btn btn-warning btn-sm me-2" onClick={()=>editarProduto(p)}>Editar</button>
+                <button className="btn btn-danger btn-sm" onClick={()=>excluirProduto(p.id)}>Excluir</button>
               </div>
             </li>
           ))}
