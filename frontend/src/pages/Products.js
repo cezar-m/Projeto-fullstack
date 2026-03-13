@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
-import api from "../api/api";
+import api from "../api/api"; // Axios com token
 
 export default function Products() {
   const [produtos, setProdutos] = useState([]);
@@ -8,7 +8,7 @@ export default function Products() {
 
   const [idEditar, setIdEditar] = useState(null);
   const [nome, setNome] = useState("");
-  const [preco, setPreco] = useState(""); // preco em centavos para input
+  const [preco, setPreco] = useState(""); // em centavos
   const [quantidade, setQuantidade] = useState("");
   const [descricao, setDescricao] = useState("");
   const [imagem, setImagem] = useState(null);
@@ -23,49 +23,44 @@ export default function Products() {
     fetchProdutos();
   }, []);
 
+  // Buscar produtos
   const fetchProdutos = async () => {
     try {
       const res = await api.get("/products");
-      setProdutos(res.data.map(p => ({
-        ...p,
-        imagem: p.imagem || null
-      })));
+      setProdutos(res.data.map(p => ({ ...p, imagem: p.imagem || null })));
     } catch (err) {
       console.error(err);
       setErro("Erro ao carregar produtos");
     }
   };
 
-  // Mantém o valor do input em centavos
+  // Input preço em centavos
   const handlePrecoChange = (e) => {
     const onlyNumbers = e.target.value.replace(/\D/g, "");
     setPreco(onlyNumbers);
   };
 
-  // Formatação do input (ex.: 1234 -> R$12,34)
+  // Formatação input (R$ 12,34)
   const formatarPrecoInput = (valor) => {
     if (!valor) return "";
-    const numero = Number(valor) / 100;
-    return numero.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    return (Number(valor) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
 
-  // Formatação para exibir na lista
-  const formatarPrecoLista = (valor) =>
-    Number(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  // Formatação lista
+  const formatarPrecoLista = (valor) => Number(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+  // Preview da imagem
   const handleImagemChange = (e) => {
     const file = e.target.files[0];
     setImagem(file);
-
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => setPreview(reader.result);
       reader.readAsDataURL(file);
-    } else {
-      setPreview(null);
-    }
+    } else setPreview(null);
   };
 
+  // Limpar form
   const limparFormulario = () => {
     setIdEditar(null);
     setNome("");
@@ -77,6 +72,7 @@ export default function Products() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // Salvar produto
   const salvar = async () => {
     if (!nome || !preco || !quantidade || !descricao) {
       setErro("Preencha todos os campos");
@@ -85,17 +81,15 @@ export default function Products() {
 
     const formData = new FormData();
     formData.append("nome", nome);
-    formData.append("preco", (Number(preco) / 100).toFixed(2)); // envia número correto
+    formData.append("preco", (Number(preco) / 100).toFixed(2)); // envia número decimal correto
     formData.append("quantidade", quantidade);
     formData.append("descricao", descricao);
     if (imagem) formData.append("imagem", imagem);
 
     try {
-      if (idEditar) {
-        await api.put(`/products/${idEditar}`, formData);
-      } else {
-        await api.post("/products", formData);
-      }
+      if (idEditar) await api.put(`/products/${idEditar}`, formData);
+      else await api.post("/products", formData);
+
       limparFormulario();
       fetchProdutos();
     } catch (err) {
@@ -104,15 +98,17 @@ export default function Products() {
     }
   };
 
+  // Editar produto
   const editarProduto = (p) => {
     setIdEditar(p.id);
     setNome(p.nome);
-    setPreco(String(Math.round(Number(p.preco) * 100))); // transforma em centavos
+    setPreco(String(Math.round(Number(p.preco) * 100))); // converte decimal para centavos
     setQuantidade(p.quantidade);
     setDescricao(p.descricao);
     setPreview(p.imagem || null);
   };
 
+  // Excluir produto
   const excluirProduto = async (id) => {
     if (!window.confirm("Deseja excluir?")) return;
     try {
@@ -124,10 +120,8 @@ export default function Products() {
     }
   };
 
-  // Filtro e pesquisa
-  let lista = produtos.filter((p) =>
-    p.nome.toLowerCase().includes(pesquisa.toLowerCase())
-  );
+  // Filtrar produtos
+  let lista = produtos.filter(p => p.nome.toLowerCase().includes(pesquisa.toLowerCase()));
 
   if (filtroPreco === "maior" && lista.length > 0) {
     const maior = Math.max(...lista.map(p => Number(p.preco)));
@@ -146,12 +140,11 @@ export default function Products() {
         <h2>Produtos</h2>
         {erro && <p className="text-danger">{erro}</p>}
 
-        <input className="form-control mb-2" placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
+        <input className="form-control mb-2" placeholder="Nome" value={nome} onChange={e => setNome(e.target.value)} />
         <input className="form-control mb-2" placeholder="Preço" value={formatarPrecoInput(preco)} onChange={handlePrecoChange} />
-        <input className="form-control mb-2" type="number" placeholder="Quantidade" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
-        <textarea className="form-control mb-2" placeholder="Descrição" value={descricao} onChange={(e) => setDescricao(e.target.value)} />
+        <input className="form-control mb-2" type="number" placeholder="Quantidade" value={quantidade} onChange={e => setQuantidade(e.target.value)} />
+        <textarea className="form-control mb-2" placeholder="Descrição" value={descricao} onChange={e => setDescricao(e.target.value)} />
         <input className="form-control mb-2" type="file" ref={fileInputRef} onChange={handleImagemChange} />
-
         {preview && <img src={preview} alt="preview" width="120" className="mb-2" style={{ objectFit: "cover" }} />}
 
         <button className="btn btn-primary mb-3" onClick={salvar}>
@@ -160,7 +153,7 @@ export default function Products() {
 
         <hr />
 
-        <input className="form-control mb-2" placeholder="Pesquisar produto..." value={pesquisa} onChange={(e) => setPesquisa(e.target.value)} />
+        <input className="form-control mb-2" placeholder="Pesquisar..." value={pesquisa} onChange={e => setPesquisa(e.target.value)} />
 
         <div className="mb-3 d-flex gap-2">
           <button className="btn btn-success btn-sm" onClick={() => setFiltroPreco("maior")}>Maior Preço</button>
@@ -169,7 +162,7 @@ export default function Products() {
         </div>
 
         <ul className="list-group">
-          {lista.map((p) => (
+          {lista.map(p => (
             <li key={p.id} className="list-group-item d-flex justify-content-between align-items-center">
               <div className="d-flex gap-3 align-items-center">
                 <img src={p.imagem || "https://via.placeholder.com/70"} alt={p.nome} width="70" height="70" style={{ objectFit: "cover" }} />
