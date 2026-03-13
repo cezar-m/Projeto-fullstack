@@ -10,9 +10,7 @@ const router = express.Router();
 ========================= */
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: "Usuário não autenticado" });
-    }
+    if (!req.user?.id) return res.status(401).json({ message: "Usuário não autenticado" });
 
     const { search, order } = req.query;
     let query = `SELECT * FROM produtos WHERE id_usuario = $1`;
@@ -34,7 +32,7 @@ router.get("/", authMiddleware, async (req, res) => {
 
   } catch (err) {
     console.error("Erro ao listar produtos:", err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Erro interno ao listar produtos" });
   }
 });
 
@@ -43,52 +41,48 @@ router.get("/", authMiddleware, async (req, res) => {
 ========================= */
 router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
   try {
-    console.log("REQ.USER:", req.user);
-    console.log("REQ.BODY:", req.body);
-    console.log("REQ.FILE:", req.file);
-
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: "Usuário não autenticado" });
-    }
+    if (!req.user?.id) return res.status(401).json({ message: "Usuário não autenticado" });
 
     const { nome, preco, descricao, quantidade } = req.body;
 
+    // ✅ Validação simples
     if (!nome || !preco || !descricao || !quantidade) {
-      return res.status(400).json({ message: "Dados incompletos" });
+      return res.status(400).json({ message: "Todos os campos são obrigatórios" });
+    }
+
+    const precoFloat = parseFloat(preco);
+    const quantidadeInt = parseInt(quantidade);
+
+    if (isNaN(precoFloat) || isNaN(quantidadeInt)) {
+      return res.status(400).json({ message: "Preço ou quantidade inválidos" });
     }
 
     let imagemUrl = null;
 
-    if (req.file && req.file.buffer) {
+    // ✅ Upload seguro para Cloudinary
+    if (req.file?.buffer) {
       try {
         const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
         imagemUrl = uploadResult.secure_url;
       } catch (err) {
-        console.error("Erro Cloudinary:", err);
-        return res.status(500).json({ message: "Falha ao enviar imagem" });
+        console.error("Erro ao enviar imagem para Cloudinary:", err);
+        return res.status(500).json({ message: "Erro ao enviar imagem" });
       }
     }
 
     const result = await db.query(
       `INSERT INTO produtos
-        (nome, preco, descricao, quantidade, imagem, id_usuario)
-        VALUES ($1,$2,$3,$4,$5,$6)
-        RETURNING *`,
-      [
-        nome,
-        parseFloat(preco),
-        descricao,
-        parseInt(quantidade),
-        imagemUrl,
-        req.user.id
-      ]
+      (nome, preco, descricao, quantidade, imagem, id_usuario)
+      VALUES ($1,$2,$3,$4,$5,$6)
+      RETURNING *`,
+      [nome, precoFloat, descricao, quantidadeInt, imagemUrl, req.user.id]
     );
 
     res.status(201).json(result.rows[0]);
 
   } catch (err) {
     console.error("Erro ao criar produto:", err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Erro interno ao criar produto" });
   }
 });
 
@@ -97,13 +91,7 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
 ========================= */
 router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => {
   try {
-    console.log("REQ.USER:", req.user);
-    console.log("REQ.BODY:", req.body);
-    console.log("REQ.FILE:", req.file);
-
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: "Usuário não autenticado" });
-    }
+    if (!req.user?.id) return res.status(401).json({ message: "Usuário não autenticado" });
 
     const { id } = req.params;
     const { nome, preco, descricao, quantidade } = req.body;
@@ -117,35 +105,38 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
       return res.status(404).json({ message: "Produto não encontrado ou sem permissão" });
     }
 
+    const precoFloat = parseFloat(preco);
+    const quantidadeInt = parseInt(quantidade);
+
+    if (!nome || isNaN(precoFloat) || !descricao || isNaN(quantidadeInt)) {
+      return res.status(400).json({ message: "Dados inválidos" });
+    }
+
     let imagemUrl = produtoAtual.rows[0].imagem;
 
-    if (req.file && req.file.buffer) {
+    if (req.file?.buffer) {
       try {
         const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
         imagemUrl = uploadResult.secure_url;
       } catch (err) {
-        console.error("Erro Cloudinary:", err);
-        return res.status(500).json({ message: "Falha ao enviar imagem" });
+        console.error("Erro ao enviar imagem para Cloudinary:", err);
+        return res.status(500).json({ message: "Erro ao enviar imagem" });
       }
     }
 
     const result = await db.query(
       `UPDATE produtos
-        SET nome=$1,
-            preco=$2,
-            descricao=$3,
-            quantidade=$4,
-            imagem=$5
-        WHERE id=$6 AND id_usuario=$7
-        RETURNING *`,
-      [nome, parseFloat(preco), descricao, parseInt(quantidade), imagemUrl, id, req.user.id]
+       SET nome=$1, preco=$2, descricao=$3, quantidade=$4, imagem=$5
+       WHERE id=$6 AND id_usuario=$7
+       RETURNING *`,
+      [nome, precoFloat, descricao, quantidadeInt, imagemUrl, id, req.user.id]
     );
 
     res.json(result.rows[0]);
 
   } catch (err) {
     console.error("Erro ao atualizar produto:", err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Erro interno ao atualizar produto" });
   }
 });
 
@@ -154,11 +145,7 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
 ========================= */
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
-    console.log("REQ.USER:", req.user);
-
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: "Usuário não autenticado" });
-    }
+    if (!req.user?.id) return res.status(401).json({ message: "Usuário não autenticado" });
 
     const { id } = req.params;
 
@@ -180,7 +167,7 @@ router.delete("/:id", authMiddleware, async (req, res) => {
 
   } catch (err) {
     console.error("Erro ao excluir produto:", err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Erro interno ao excluir produto" });
   }
 });
 
