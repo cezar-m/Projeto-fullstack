@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
-import api from "../api/api"; // Axios configurado com token
+import api from "../api/api";
 
 export default function Products() {
   const [produtos, setProdutos] = useState([]);
@@ -16,12 +16,9 @@ export default function Products() {
 
   const [pesquisa, setPesquisa] = useState("");
   const [filtroPreco, setFiltroPreco] = useState("");
-
   const fileInputRef = useRef(null);
 
-  useEffect(() => {
-    fetchProdutos();
-  }, []);
+  useEffect(() => { fetchProdutos(); }, []);
 
   const fetchProdutos = async () => {
     try {
@@ -33,47 +30,14 @@ export default function Products() {
     }
   };
 
-  const handlePrecoChange = (e) => {
-    setPreco(e.target.value.replace(/\D/g, ""));
-  };
-
-  const formatarPrecoInput = (valor) => {
-    if (!valor) return "";
-    return (Number(valor) / 100).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-  };
-
-  const formatarPrecoLista = (valor) =>
-    Number(valor).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-
   const handleImagemChange = (e) => {
     const file = e.target.files[0];
     setImagem(file);
-
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => setPreview(reader.result);
       reader.readAsDataURL(file);
-    } else {
-      setPreview(null);
-    }
-  };
-
-  const limparFormulario = () => {
-    setIdEditar(null);
-    setNome("");
-    setPreco("");
-    setQuantidade("");
-    setDescricao("");
-    setImagem(null);
-    setPreview(null);
-
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    } else setPreview(null);
   };
 
   const salvar = async () => {
@@ -81,7 +45,6 @@ export default function Products() {
       setErro("Preencha todos os campos");
       return;
     }
-
     const formData = new FormData();
     formData.append("nome", nome);
     formData.append("preco", Number(preco) / 100);
@@ -90,12 +53,8 @@ export default function Products() {
     if (imagem) formData.append("imagem", imagem);
 
     try {
-      if (idEditar) {
-        await api.put(`/products/${idEditar}`, formData);
-      } else {
-        await api.post("/products", formData);
-      }
-
+      if (idEditar) await api.put(`/products/${idEditar}`, formData);
+      else await api.post("/products", formData);
       limparFormulario();
       fetchProdutos();
     } catch (err) {
@@ -104,164 +63,45 @@ export default function Products() {
     }
   };
 
+  const limparFormulario = () => {
+    setIdEditar(null); setNome(""); setPreco(""); setQuantidade(""); setDescricao(""); setImagem(null); setPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const editarProduto = (p) => {
-    setIdEditar(p.id);
-    setNome(p.nome);
-    setPreco(String(Math.round(p.preco * 100)));
-    setQuantidade(p.quantidade);
-    setDescricao(p.descricao);
-    setPreview(p.imagem || null);
+    setIdEditar(p.id); setNome(p.nome); setPreco(String(Math.round(p.preco * 100))); setQuantidade(p.quantidade); setDescricao(p.descricao); setPreview(p.imagem || null);
   };
 
   const excluirProduto = async (id) => {
     if (!window.confirm("Deseja excluir?")) return;
-    try {
-      await api.delete(`/products/${id}`);
-      fetchProdutos();
-    } catch (err) {
-      console.error(err);
-      setErro("Erro ao excluir produto");
-    }
+    try { await api.delete(`/products/${id}`); fetchProdutos(); } catch { setErro("Erro ao excluir produto"); }
   };
-
-  // FILTRO NOME
-  let lista = produtos.filter((p) =>
-    p.nome.toLowerCase().includes(pesquisa.toLowerCase())
-  );
-
-  // FILTRO MAIOR / MENOR PREÇO
-  if (filtroPreco === "maior" && lista.length > 0) {
-    const maior = Math.max(...lista.map((p) => Number(p.preco)));
-    lista = lista.filter((p) => Number(p.preco) === maior);
-  }
-
-  if (filtroPreco === "menor" && lista.length > 0) {
-    const menor = Math.min(...lista.map((p) => Number(p.preco)));
-    lista = lista.filter((p) => Number(p.preco) === menor);
-  }
 
   return (
     <div>
       <Navbar />
-
       <div className="container mt-4">
         <h2>Produtos</h2>
         {erro && <p className="text-danger">{erro}</p>}
-
-        <input
-          className="form-control mb-2"
-          placeholder="Nome"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-        />
-        <input
-          className="form-control mb-2"
-          placeholder="Preço"
-          value={formatarPrecoInput(preco)}
-          onChange={handlePrecoChange}
-        />
-        <input
-          className="form-control mb-2"
-          type="number"
-          placeholder="Quantidade"
-          value={quantidade}
-          onChange={(e) => setQuantidade(e.target.value)}
-        />
-        <textarea
-          className="form-control mb-2"
-          placeholder="Descrição"
-          value={descricao}
-          onChange={(e) => setDescricao(e.target.value)}
-        />
-        <input
-          className="form-control mb-2"
-          type="file"
-          ref={fileInputRef}
-          onChange={handleImagemChange}
-        />
-
-        {preview && (
-          <img
-            src={preview}
-            alt="preview"
-            width="120"
-            className="mb-2"
-            style={{ objectFit: "cover" }}
-          />
-        )}
-
-        <button className="btn btn-primary mb-3" onClick={salvar}>
-          {idEditar ? "Salvar Alterações" : "Cadastrar Produto"}
-        </button>
-
+        <input className="form-control mb-2" placeholder="Nome" value={nome} onChange={e => setNome(e.target.value)} />
+        <input className="form-control mb-2" placeholder="Preço" value={preco} onChange={e => setPreco(e.target.value.replace(/\D/g,''))} />
+        <input className="form-control mb-2" type="number" placeholder="Quantidade" value={quantidade} onChange={e => setQuantidade(e.target.value)} />
+        <textarea className="form-control mb-2" placeholder="Descrição" value={descricao} onChange={e => setDescricao(e.target.value)} />
+        <input className="form-control mb-2" type="file" ref={fileInputRef} onChange={handleImagemChange} />
+        {preview && <img src={preview} width="120" alt="preview" className="mb-2" style={{objectFit:'cover'}} />}
+        <button className="btn btn-primary mb-3" onClick={salvar}>{idEditar ? "Salvar" : "Cadastrar"}</button>
         <hr />
-
-        {/* PESQUISA */}
-        <input
-          className="form-control mb-2"
-          placeholder="Pesquisar produto..."
-          value={pesquisa}
-          onChange={(e) => setPesquisa(e.target.value)}
-        />
-
-        {/* BOTÕES MAIOR / MENOR */}
-        <div className="mb-3 d-flex gap-2">
-          <button
-            className="btn btn-success btn-sm"
-            onClick={() => setFiltroPreco("maior")}
-          >
-            Maior Preço
-          </button>
-          <button
-            className="btn btn-info btn-sm"
-            onClick={() => setFiltroPreco("menor")}
-          >
-            Menor Preço
-          </button>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => setFiltroPreco("")}
-          >
-            Limpar Filtro
-          </button>
-        </div>
-
+        <input className="form-control mb-2" placeholder="Pesquisar produto..." value={pesquisa} onChange={e => setPesquisa(e.target.value)} />
         <ul className="list-group">
-          {lista.map((p) => (
-            <li
-              key={p.id}
-              className="list-group-item d-flex justify-content-between align-items-center"
-            >
+          {produtos.filter(p => p.nome.toLowerCase().includes(pesquisa.toLowerCase())).map(p => (
+            <li key={p.id} className="list-group-item d-flex justify-content-between align-items-center">
               <div className="d-flex gap-3 align-items-center">
-                {p.imagem && (
-                  <img
-                    src={p.imagem}
-                    alt={p.nome}
-                    width="70"
-                    height="70"
-                    style={{ objectFit: "cover" }}
-                  />
-                )}
-                <div>
-                  <strong>{p.nome}</strong>
-                  <div>{formatarPrecoLista(p.preco)}</div>
-                  <small>Qtd: {p.quantidade}</small>
-                </div>
+                {p.imagem && <img src={p.imagem} width="70" height="70" style={{objectFit:'cover'}} alt={p.nome} />}
+                <div><strong>{p.nome}</strong><div>R$ {p.preco}</div><small>Qtd: {p.quantidade}</small></div>
               </div>
-
               <div>
-                <button
-                  className="btn btn-warning btn-sm me-2"
-                  onClick={() => editarProduto(p)}
-                >
-                  Editar
-                </button>
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => excluirProduto(p.id)}
-                >
-                  Excluir
-                </button>
+                <button className="btn btn-warning btn-sm me-2" onClick={()=>editarProduto(p)}>Editar</button>
+                <button className="btn btn-danger btn-sm" onClick={()=>excluirProduto(p.id)}>Excluir</button>
               </div>
             </li>
           ))}
