@@ -8,9 +8,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export const upload = multer({
-  storage: multer.memoryStorage(),
-});
+export const upload = multer({ storage: multer.memoryStorage() });
 
 export const uploadToCloudinary = (fileBuffer, folder = "produtos") => {
   return new Promise((resolve, reject) => {
@@ -18,10 +16,9 @@ export const uploadToCloudinary = (fileBuffer, folder = "produtos") => {
       { folder },
       (error, result) => {
         if (error) reject(error);
-        resolve(result);
+        else resolve(result);
       }
     );
-
     streamifier.createReadStream(fileBuffer).pipe(stream);
   });
 };
