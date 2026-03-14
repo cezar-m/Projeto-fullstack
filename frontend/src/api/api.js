@@ -11,8 +11,8 @@ api.interceptors.request.use(
     const token = localStorage.getItem("token");
     if (token) config.headers.Authorization = `Bearer ${token}`;
 
-    // Ajuste Content-Type só se não for upload
-    if (!config.headers["Content-Type"]) {
+    // Ajusta Content-Type só se não for FormData (upload)
+    if (!(config.data instanceof FormData)) {
       config.headers["Content-Type"] = "application/json";
     }
 
@@ -31,7 +31,7 @@ api.interceptors.request.use(
 export const uploadApi = async (url, formData) => {
   return api.post(url, formData, {
     headers: {
-      "Content-Type": "multipart/form-data",
+      // Axios já define o Content-Type correto para FormData
       Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
     },
   });
