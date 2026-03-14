@@ -1,4 +1,3 @@
-import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import streamifier from "streamifier";
 
@@ -8,13 +7,18 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export const upload = multer({ storage: multer.memoryStorage() });
-
 export const uploadToCloudinary = (fileBuffer, folder = "produtos") =>
   new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream({ folder }, (error, result) => {
-      if (error) reject(error);
-      else resolve(result);
-    });
+    if (!fileBuffer) return reject(new Error("Arquivo inválido"));
+
+    const stream = cloudinary.uploader.upload_stream(
+      { folder },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+
     streamifier.createReadStream(fileBuffer).pipe(stream);
   });
+
