@@ -1,5 +1,5 @@
 import express from "express";
-import db from "../db.js";
+import db from "../db.js"; // conexão PostgreSQL
 import { upload, uploadToCloudinary } from "../middleware/upload.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -36,8 +36,6 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
       imagemUrl = uploadResult.secure_url;
     }
 
-
-
     const result = await db.query(
       `INSERT INTO produtos (nome, preco, descricao, quantidade, imagem, id_usuario)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
@@ -68,8 +66,9 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
     const quantidadeLimpa = Number(quantidade);
 
     let imagemUrl = produtoAtual.rows[0].imagem || null;
-    if (req.file?.buffer) {
-      const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
+    if (req.file && req.file.buffer) {
+      const nomeArquivo = `${Date.now()}-${req.file.originalname}`;
+      const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos", nomeArquivo);
       imagemUrl = uploadResult.secure_url;
     }
 
@@ -92,7 +91,10 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query("DELETE FROM produtos WHERE id=$1 AND id_usuario=$2", [id, req.user.id]);
+    await db.query(
+      "DELETE FROM produtos WHERE id=$1 AND id_usuario=$2",
+      [id, req.user.id]
+    );
     res.json({ message: "Produto excluído com sucesso" });
   } catch (err) {
     console.error("Erro ao excluir produto:", err);
