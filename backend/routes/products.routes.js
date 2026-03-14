@@ -1,5 +1,5 @@
 import express from "express";
-import db from "../db.js"; // conexão PostgreSQL
+import db from "../db.js";
 import { upload, uploadToCloudinary } from "../middleware/upload.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -23,23 +23,21 @@ router.get("/", authMiddleware, async (req, res) => {
 router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
   try {
     const { nome, preco, descricao, quantidade } = req.body;
+
     if (!nome || !preco || !descricao || !quantidade)
       return res.status(400).json({ message: "Dados incompletos" });
 
-    const precoLimpo = parseFloat(preco.toString().replace(",", "."));
-    const quantidadeLimpa = Number(quantidade);
-
     let imagemUrl = null;
+
     if (req.file && req.file.buffer) {
-      const nomeArquivo = `${Date.now()}-${req.file.originalname}`;
-      const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos", nomeArquivo);
+      const uploadResult = await uploadToCloudinary(req.file.buffer);
       imagemUrl = uploadResult.secure_url;
     }
 
     const result = await db.query(
       `INSERT INTO produtos (nome, preco, descricao, quantidade, imagem, id_usuario)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [nome, precoLimpo, descricao, quantidadeLimpa, imagemUrl, req.user.id]
+      [nome, parseFloat(preco), descricao, Number(quantidade), imagemUrl, req.user.id]
     );
 
     res.status(201).json(result.rows[0]);
@@ -59,25 +57,22 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
       "SELECT * FROM produtos WHERE id=$1 AND id_usuario=$2",
       [id, req.user.id]
     );
+
     if (produtoAtual.rowCount === 0)
       return res.status(404).json({ message: "Produto não encontrado" });
 
-    const precoLimpo = parseFloat(preco.toString().replace(",", "."));
-    const quantidadeLimpa = Number(quantidade);
-
     let imagemUrl = produtoAtual.rows[0].imagem || null;
+
     if (req.file && req.file.buffer) {
-      const nomeArquivo = `${Date.now()}-${req.file.originalname}`;
-      const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos", nomeArquivo);
+      const uploadResult = await uploadToCloudinary(req.file.buffer);
       imagemUrl = uploadResult.secure_url;
     }
 
     const result = await db.query(
       `UPDATE produtos
        SET nome=$1, preco=$2, descricao=$3, quantidade=$4, imagem=$5
-       WHERE id=$6 AND id_usuario=$7
-       RETURNING *`,
-      [nome, precoLimpo, descricao, quantidadeLimpa, imagemUrl, id, req.user.id]
+       WHERE id=$6 AND id_usuario=$7 RETURNING *`,
+      [nome, parseFloat(preco), descricao, Number(quantidade), imagemUrl, id, req.user.id]
     );
 
     res.json(result.rows[0]);
@@ -91,10 +86,7 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query(
-      "DELETE FROM produtos WHERE id=$1 AND id_usuario=$2",
-      [id, req.user.id]
-    );
+    await db.query("DELETE FROM produtos WHERE id=$1 AND id_usuario=$2", [id, req.user.id]);
     res.json({ message: "Produto excluído com sucesso" });
   } catch (err) {
     console.error("Erro ao excluir produto:", err);
