@@ -5,9 +5,7 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-/* =========================
-   LISTAR PRODUTOS
-========================= */
+// LISTAR PRODUTOS
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const result = await db.query(
@@ -21,29 +19,19 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-/* =========================
-   CRIAR PRODUTO
-========================= */
+// CRIAR PRODUTO
 router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
   try {
     const { nome, preco, descricao, quantidade } = req.body;
-
     if (!nome || !preco || !descricao || !quantidade)
       return res.status(400).json({ message: "Dados incompletos" });
 
-    // Limpar preço e quantidade
     const precoLimpo = parseFloat(preco.toString().replace(",", "."));
     const quantidadeLimpa = Number(quantidade);
 
     let imagemUrl = null;
-
     if (req.file) {
-      // Se upload.js estiver com diskStorage use req.file.path
-      // Se estiver com memoryStorage use req.file.buffer
-      const uploadResult = await uploadToCloudinary(
-        req.file.buffer || req.file.path,
-        "produtos"
-      );
+      const uploadResult = await uploadToCloudinary(req.file.path, "produtos"); // caminho físico
       imagemUrl = uploadResult.secure_url;
     }
 
@@ -60,9 +48,7 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
   }
 });
 
-/* =========================
-   ATUALIZAR PRODUTO
-========================= */
+// ATUALIZAR PRODUTO
 router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => {
   try {
     const { id } = req.params;
@@ -75,17 +61,12 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
     if (produtoAtual.rowCount === 0)
       return res.status(404).json({ message: "Produto não encontrado" });
 
-    // Limpar preço e quantidade
     const precoLimpo = parseFloat(preco.toString().replace(",", "."));
     const quantidadeLimpa = Number(quantidade);
 
     let imagemUrl = produtoAtual.rows[0].imagem || null;
-
     if (req.file) {
-      const uploadResult = await uploadToCloudinary(
-        req.file.buffer || req.file.path,
-        "produtos"
-      );
+      const uploadResult = await uploadToCloudinary(req.file.path, "produtos"); // caminho físico
       imagemUrl = uploadResult.secure_url;
     }
 
@@ -104,16 +85,11 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
   }
 });
 
-/* =========================
-   EXCLUIR PRODUTO
-========================= */
+// EXCLUIR PRODUTO
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query(
-      "DELETE FROM produtos WHERE id=$1 AND id_usuario=$2",
-      [id, req.user.id]
-    );
+    await db.query("DELETE FROM produtos WHERE id=$1 AND id_usuario=$2", [id, req.user.id]);
     res.json({ message: "Produto excluído com sucesso" });
   } catch (err) {
     console.error("Erro ao excluir produto:", err);
