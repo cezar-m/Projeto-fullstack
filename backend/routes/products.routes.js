@@ -30,10 +30,11 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
     const quantidadeLimpa = Number(quantidade);
 
     let imagemUrl = null;
-    if (req.file?.buffer) {
+    if (req.file && req.file.buffer) {
       const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
       imagemUrl = uploadResult.secure_url;
-    }
+    }  
+
 
     const result = await db.query(
       `INSERT INTO produtos (nome, preco, descricao, quantidade, imagem, id_usuario)
