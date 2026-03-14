@@ -19,9 +19,7 @@ export default function Products() {
 
   const fileInputRef = useRef(null);
 
-  useEffect(() => {
-    fetchProdutos();
-  }, []);
+  useEffect(() => { fetchProdutos(); }, []);
 
   const fetchProdutos = async () => {
     try {
@@ -34,14 +32,8 @@ export default function Products() {
   };
 
   const handlePrecoChange = (e) => setPreco(e.target.value.replace(/\D/g, ""));
-
-  const formatarPrecoInput = (valor) => {
-    if (!valor) return "";
-    return (Number(valor)/100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  };
-
-  const formatarPrecoLista = (valor) =>
-    Number(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const formatarPrecoInput = (valor) => !valor ? "" : (Number(valor)/100).toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+  const formatarPrecoLista = (valor) => Number(valor).toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
 
   const handleImagemChange = (e) => {
     const file = e.target.files[0];
@@ -54,8 +46,7 @@ export default function Products() {
   };
 
   const limparFormulario = () => {
-    setIdEditar(null);
-    setNome(""); setPreco(""); setQuantidade(""); setDescricao(""); setImagem(null); setPreview(null);
+    setIdEditar(null); setNome(""); setPreco(""); setQuantidade(""); setDescricao(""); setImagem(null); setPreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -64,7 +55,7 @@ export default function Products() {
 
     const formData = new FormData();
     formData.append("nome", nome);
-    formData.append("preco", Number(preco)/100); // <-- número real
+    formData.append("preco", Number(preco)/100);
     formData.append("quantidade", quantidade);
     formData.append("descricao", descricao);
     if (imagem) formData.append("imagem", imagem);
@@ -83,7 +74,7 @@ export default function Products() {
   const editarProduto = (p) => {
     setIdEditar(p.id);
     setNome(p.nome);
-    setPreco(String(Math.round(Number(p.preco)*100))); // centavos
+    setPreco(String(Math.round(Number(p.preco)*100)));
     setQuantidade(p.quantidade);
     setDescricao(p.descricao);
     setPreview(p.imagem || null);
@@ -106,18 +97,17 @@ export default function Products() {
         <h2>Produtos</h2>
         {erro && <p className="text-danger">{erro}</p>}
 
-        <input className="form-control mb-2" placeholder="Nome" value={nome} onChange={e => setNome(e.target.value)} />
+        <input className="form-control mb-2" placeholder="Nome" value={nome} onChange={e=>setNome(e.target.value)} />
         <input className="form-control mb-2" placeholder="Preço" value={formatarPrecoInput(preco)} onChange={handlePrecoChange} />
-        <input className="form-control mb-2" type="number" placeholder="Quantidade" value={quantidade} onChange={e => setQuantidade(e.target.value)} />
-        <textarea className="form-control mb-2" placeholder="Descrição" value={descricao} onChange={e => setDescricao(e.target.value)} />
+        <input className="form-control mb-2" type="number" placeholder="Quantidade" value={quantidade} onChange={e=>setQuantidade(e.target.value)} />
+        <textarea className="form-control mb-2" placeholder="Descrição" value={descricao} onChange={e=>setDescricao(e.target.value)} />
         <input className="form-control mb-2" type="file" ref={fileInputRef} onChange={handleImagemChange} />
-        {preview && <img src={preview} alt="preview" width="120" style={{ objectFit:"cover" }} className="mb-2"/>}
+        {preview && <img src={preview} alt="preview" style={{ width:"120px", height:"120px", objectFit:"contain", border:"1px solid #ccc", borderRadius:"8px" }} className="mb-2"/>}
 
         <button className="btn btn-primary mb-3" onClick={salvar}>{idEditar ? "Salvar Alterações" : "Cadastrar Produto"}</button>
 
         <hr />
         <input className="form-control mb-2" placeholder="Pesquisar produto..." value={pesquisa} onChange={e=>setPesquisa(e.target.value)} />
-
         <div className="mb-3 d-flex gap-2">
           <button className="btn btn-success btn-sm" onClick={()=>setFiltroPreco("maior")}>Maior Preço</button>
           <button className="btn btn-info btn-sm" onClick={()=>setFiltroPreco("menor")}>Menor Preço</button>
@@ -125,10 +115,10 @@ export default function Products() {
         </div>
 
         <ul className="list-group">
-          {lista.map(p=>(
+          {lista.map(p => (
             <li key={p.id} className="list-group-item d-flex justify-content-between align-items-center">
               <div className="d-flex gap-3 align-items-center">
-                <img src={p.imagem || "https://via.placeholder.com/70"} alt={p.nome} width="70" height="70" style={{objectFit:"cover"}} />
+                <img src={p.imagem || "https://via.placeholder.com/70"} alt={p.nome} style={{ width:"70px", height:"70px", objectFit:"contain", borderRadius:"6px", border:"1px solid #ddd" }} />
                 <div>
                   <strong>{p.nome}</strong>
                   <div>{formatarPrecoLista(p.preco)}</div>
@@ -146,3 +136,4 @@ export default function Products() {
     </div>
   );
 }
+      
