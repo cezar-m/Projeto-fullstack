@@ -31,9 +31,11 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
 
     let imagemUrl = null;
     if (req.file && req.file.buffer) {
-      const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
+      const nomeArquivo = `${Date.now()}-${req.file.originalname}`;
+      const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos", nomeArquivo);
       imagemUrl = uploadResult.secure_url;
-    }  
+    }
+
 
 
     const result = await db.query(
