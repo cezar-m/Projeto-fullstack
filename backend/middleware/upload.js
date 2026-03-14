@@ -8,9 +8,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Multer em memória
 export const upload = multer({ storage: multer.memoryStorage() });
 
-// Função para upload com buffer e type
+// Upload para Cloudinary usando buffer
 export const uploadToCloudinary = (fileBuffer, folder = "produtos", filename = "file") =>
   new Promise((resolve, reject) => {
     if (!fileBuffer) return reject(new Error("Arquivo inválido"));
