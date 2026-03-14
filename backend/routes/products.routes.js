@@ -1,3 +1,4 @@
+// backend/routes/products.js
 import express from "express";
 import db from "../db.js";
 import { upload, uploadToCloudinary } from "../middleware/upload.js";
@@ -5,7 +6,9 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// LISTAR PRODUTOS
+/* =========================
+   LISTAR PRODUTOS
+========================= */
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const result = await db.query(
@@ -19,10 +22,13 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-// CRIAR PRODUTO
+/* =========================
+   CRIAR PRODUTO
+========================= */
 router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
   try {
     const { nome, preco, descricao, quantidade } = req.body;
+
     if (!nome || !preco || !descricao || !quantidade)
       return res.status(400).json({ message: "Dados incompletos" });
 
@@ -30,8 +36,8 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
     const quantidadeLimpa = Number(quantidade);
 
     let imagemUrl = null;
-    if (req.file) {
-      const uploadResult = await uploadToCloudinary(req.file.path, "produtos"); // caminho físico
+    if (req.file && req.file.buffer) {
+      const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
       imagemUrl = uploadResult.secure_url;
     }
 
@@ -48,7 +54,9 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
   }
 });
 
-// ATUALIZAR PRODUTO
+/* =========================
+   ATUALIZAR PRODUTO
+========================= */
 router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => {
   try {
     const { id } = req.params;
@@ -65,8 +73,8 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
     const quantidadeLimpa = Number(quantidade);
 
     let imagemUrl = produtoAtual.rows[0].imagem || null;
-    if (req.file) {
-      const uploadResult = await uploadToCloudinary(req.file.path, "produtos"); // caminho físico
+    if (req.file && req.file.buffer) {
+      const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
       imagemUrl = uploadResult.secure_url;
     }
 
@@ -85,11 +93,16 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
   }
 });
 
-// EXCLUIR PRODUTO
+/* =========================
+   EXCLUIR PRODUTO
+========================= */
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query("DELETE FROM produtos WHERE id=$1 AND id_usuario=$2", [id, req.user.id]);
+    await db.query(
+      "DELETE FROM produtos WHERE id=$1 AND id_usuario=$2",
+      [id, req.user.id]
+    );
     res.json({ message: "Produto excluído com sucesso" });
   } catch (err) {
     console.error("Erro ao excluir produto:", err);
