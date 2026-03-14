@@ -31,16 +31,26 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
     if (!nome || !preco || !descricao || !quantidade)
       return res.status(400).json({ message: "Dados incompletos" });
 
+    // Limpar preço e quantidade
+    const precoLimpo = parseFloat(preco.toString().replace(",", "."));
+    const quantidadeLimpa = Number(quantidade);
+
     let imagemUrl = null;
+
     if (req.file) {
-      const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
+      // Se upload.js estiver com diskStorage use req.file.path
+      // Se estiver com memoryStorage use req.file.buffer
+      const uploadResult = await uploadToCloudinary(
+        req.file.buffer || req.file.path,
+        "produtos"
+      );
       imagemUrl = uploadResult.secure_url;
     }
 
     const result = await db.query(
       `INSERT INTO produtos (nome, preco, descricao, quantidade, imagem, id_usuario)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [nome, Number(preco), descricao, Number(quantidade), imagemUrl, req.user.id]
+      [nome, precoLimpo, descricao, quantidadeLimpa, imagemUrl, req.user.id]
     );
 
     res.status(201).json(result.rows[0]);
@@ -65,16 +75,26 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
     if (produtoAtual.rowCount === 0)
       return res.status(404).json({ message: "Produto não encontrado" });
 
-    let imagemUrl = produtoAtual.rows[0].imagem;
+    // Limpar preço e quantidade
+    const precoLimpo = parseFloat(preco.toString().replace(",", "."));
+    const quantidadeLimpa = Number(quantidade);
+
+    let imagemUrl = produtoAtual.rows[0].imagem || null;
+
     if (req.file) {
-      const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
+      const uploadResult = await uploadToCloudinary(
+        req.file.buffer || req.file.path,
+        "produtos"
+      );
       imagemUrl = uploadResult.secure_url;
     }
 
     const result = await db.query(
-      `UPDATE produtos SET nome=$1, preco=$2, descricao=$3, quantidade=$4, imagem=$5
-       WHERE id=$6 AND id_usuario=$7 RETURNING *`,
-      [nome, Number(preco), descricao, Number(quantidade), imagemUrl, id, req.user.id]
+      `UPDATE produtos
+       SET nome=$1, preco=$2, descricao=$3, quantidade=$4, imagem=$5
+       WHERE id=$6 AND id_usuario=$7
+       RETURNING *`,
+      [nome, precoLimpo, descricao, quantidadeLimpa, imagemUrl, id, req.user.id]
     );
 
     res.json(result.rows[0]);
@@ -90,7 +110,10 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query("DELETE FROM produtos WHERE id=$1 AND id_usuario=$2", [id, req.user.id]);
+    await db.query(
+      "DELETE FROM produtos WHERE id=$1 AND id_usuario=$2",
+      [id, req.user.id]
+    );
     res.json({ message: "Produto excluído com sucesso" });
   } catch (err) {
     console.error("Erro ao excluir produto:", err);
