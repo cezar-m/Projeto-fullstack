@@ -30,7 +30,7 @@ router.post("/", authMiddleware, upload.single("imagem"), async (req, res) => {
     const quantidadeLimpa = Number(quantidade);
 
     let imagemUrl = null;
-    if (req.file && req.file.buffer) {
+    if (req.file?.buffer) {
       const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
       imagemUrl = uploadResult.secure_url;
     }
@@ -64,8 +64,8 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
     const precoLimpo = parseFloat(preco.toString().replace(",", "."));
     const quantidadeLimpa = Number(quantidade);
 
-    let imagemUrl = produtoAtual.rows[0]?.imagem || null;
-    if (req.file && req.file.buffer) {
+    let imagemUrl = produtoAtual.rows[0].imagem || null;
+    if (req.file?.buffer) {
       const uploadResult = await uploadToCloudinary(req.file.buffer, "produtos");
       imagemUrl = uploadResult.secure_url;
     }
@@ -89,10 +89,7 @@ router.put("/:id", authMiddleware, upload.single("imagem"), async (req, res) => 
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query(
-      "DELETE FROM produtos WHERE id=$1 AND id_usuario=$2",
-      [id, req.user.id]
-    );
+    await db.query("DELETE FROM produtos WHERE id=$1 AND id_usuario=$2", [id, req.user.id]);
     res.json({ message: "Produto excluído com sucesso" });
   } catch (err) {
     console.error("Erro ao excluir produto:", err);
