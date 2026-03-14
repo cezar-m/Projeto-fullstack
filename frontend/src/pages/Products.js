@@ -24,7 +24,7 @@ export default function Products() {
   const fetchProdutos = async () => {
     try {
       const res = await api.get("/products");
-      setProdutos(res.data.map(p => ({ ...p, imagem: p.imagem || null })));
+      setProdutos(res.data);
     } catch (err) {
       console.error(err);
       setErro("Erro ao carregar produtos");
@@ -51,7 +51,7 @@ export default function Products() {
   };
 
   const salvar = async () => {
-    if (!nome || !preco || !quantidade || !descricao) { setErro("Preencha todos os campos"); return; }
+    if (!nome || !preco || !quantidade || !descricao) return setErro("Preencha todos os campos");
 
     const formData = new FormData();
     formData.append("nome", nome);
@@ -61,12 +61,20 @@ export default function Products() {
     if (imagem) formData.append("imagem", imagem);
 
     try {
-      if (idEditar) await api.put(`/products/${idEditar}`, formData);
-      else await api.post("/products", formData);
+      const res = idEditar 
+        ? await api.put(`/products/${idEditar}`, formData)
+        : await api.post("/products", formData);
+
+      const produto = res.data;
+
+      setProdutos(prev => idEditar 
+        ? prev.map(p => p.id === produto.id ? produto : p)
+        : [produto, ...prev]
+      );
+
       limparFormulario();
-      fetchProdutos();
     } catch (err) {
-      console.error("Erro no salvar produto:", err.response?.data || err);
+      console.error("Erro ao salvar produto:", err.response?.data || err);
       setErro("Erro ao salvar produto");
     }
   };
@@ -82,7 +90,7 @@ export default function Products() {
 
   const excluirProduto = async (id) => {
     if (!window.confirm("Deseja excluir?")) return;
-    try { await api.delete(`/products/${id}`); fetchProdutos(); }
+    try { await api.delete(`/products/${id}`); setProdutos(prev => prev.filter(p => p.id !== id)); }
     catch(err){ console.error(err); setErro("Erro ao excluir produto"); }
   };
 
@@ -136,4 +144,3 @@ export default function Products() {
     </div>
   );
 }
-      
