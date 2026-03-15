@@ -15,11 +15,11 @@ export default function Products() {
   const [preview, setPreview] = useState(null);
 
   const [pesquisa, setPesquisa] = useState("");
-  const [filtroPreco, setFiltroPreco] = useState("");
-
   const fileInputRef = useRef(null);
 
-  useEffect(() => { fetchProdutos(); }, []);
+  useEffect(() => {
+    fetchProdutos();
+  }, []);
 
   const fetchProdutos = async () => {
     try {
@@ -41,19 +41,6 @@ export default function Products() {
     } else setPreview(null);
   };
 
-  const formatarReal = (valor) => {
-    valor = valor.replace(/\D/g, "");
-    valor = (Number(valor) / 100).toFixed(2) + "";
-    valor = valor.replace(".", ",");
-    valor = valor.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    return "R$ " + valor;
-  };
-
-  const handlePreco = (e) => {
-    const valor = e.target.value;
-    setPreco(formatarReal(valor));
-  };
-
   const limparFormulario = () => {
     setIdEditar(null);
     setNome("");
@@ -71,15 +58,9 @@ export default function Products() {
       return;
     }
 
-    const precoNumerico = preco
-      .replace("R$", "")
-      .replace(/\./g, "")
-      .replace(",", ".")
-      .trim();
-
     const formData = new FormData();
     formData.append("nome", nome);
-    formData.append("preco", precoNumerico);
+    formData.append("preco", preco); // enviar número puro
     formData.append("quantidade", quantidade);
     formData.append("descricao", descricao);
     if (imagem) formData.append("imagem", imagem);
@@ -98,7 +79,7 @@ export default function Products() {
   const editarProduto = (p) => {
     setIdEditar(p.id);
     setNome(p.nome);
-    setPreco(formatarReal(String(p.preco * 100)));
+    setPreco(p.preco);
     setQuantidade(p.quantidade);
     setDescricao(p.descricao);
     setPreview(p.imagem || null);
@@ -109,43 +90,97 @@ export default function Products() {
     try { await api.delete(`/products/${id}`); fetchProdutos(); } catch(err){ console.error(err); }
   };
 
-  let lista = produtos.filter(p => p.nome.toLowerCase().includes(pesquisa.toLowerCase()));
-  if (filtroPreco === "maior") lista = lista.filter(p => Number(p.preco) === Math.max(...lista.map(p => Number(p.preco))));
-  if (filtroPreco === "menor") lista = lista.filter(p => Number(p.preco) === Math.min(...lista.map(p => Number(p.preco))));
+  const listaFiltrada = produtos.filter(p =>
+    p.nome.toLowerCase().includes(pesquisa.toLowerCase())
+  );
 
   return (
     <div>
       <Navbar />
 
       <div className="container mt-4">
-        <h2>Produtos</h2>
-        {erro && <p className="text-danger">{erro}</p>}
+        <h2 className="mb-4">Produtos</h2>
 
-        <div className="card p-3 mb-3">
+        {erro && <div className="alert alert-danger">{erro}</div>}
 
-          <input className="form-control mb-2" placeholder="Nome" value={nome} onChange={e=>setNome(e.target.value)} />
+        <div className="card p-3 mb-4">
+          <div className="mb-2">
+            <input
+              className="form-control"
+              placeholder="Nome"
+              value={nome}
+              onChange={e => setNome(e.target.value)}
+            />
+          </div>
 
-          <input className="form-control mb-2" placeholder="Preço" value={preco} onChange={handlePreco} />
+          <div className="mb-2">
+            <input
+              type="number"
+              className="form-control"
+              placeholder="Preço (R$)"
+              value={preco}
+              onChange={e => setPreco(e.target.value)}
+            />
+          </div>
 
-          <input type="number" className="form-control mb-2" placeholder="Quantidade" value={quantidade} onChange={e=>setQuantidade(e.target.value)} />
+          <div className="mb-2">
+            <input
+              type="number"
+              className="form-control"
+              placeholder="Quantidade"
+              value={quantidade}
+              onChange={e => setQuantidade(e.target.value)}
+            />
+          </div>
 
-          <textarea className="form-control mb-2" placeholder="Descrição" value={descricao} onChange={e=>setDescricao(e.target.value)} />
+          <div className="mb-2">
+            <textarea
+              className="form-control"
+              placeholder="Descrição"
+              value={descricao}
+              onChange={e => setDescricao(e.target.value)}
+            />
+          </div>
 
-          <input type="file" className="form-control mb-2" ref={fileInputRef} onChange={handleImagemChange} />
+          <div className="mb-2">
+            <input
+              type="file"
+              className="form-control"
+              ref={fileInputRef}
+              onChange={handleImagemChange}
+            />
+          </div>
 
-          {preview && <img src={preview} alt="preview" style={{ width:"120px", height:"120px", objectFit:"contain", border:"1px solid #ccc", borderRadius:"8px"}} />}
+          {preview && (
+            <div className="mb-2">
+              <img
+                src={preview}
+                alt="preview"
+                style={{
+                  width: "120px",
+                  height: "120px",
+                  objectFit: "contain",
+                  border: "1px solid #ccc",
+                  borderRadius: "8px"
+                }}
+              />
+            </div>
+          )}
 
-          <button className="btn btn-primary mt-2" onClick={salvar}>
+          <button className="btn btn-primary me-2" onClick={salvar}>
             {idEditar ? "Salvar Alterações" : "Cadastrar Produto"}
           </button>
-
+          <button className="btn btn-secondary" onClick={limparFormulario}>Limpar</button>
         </div>
 
-        <hr />
+        <input
+          className="form-control mb-3"
+          placeholder="Pesquisar..."
+          value={pesquisa}
+          onChange={e => setPesquisa(e.target.value)}
+        />
 
-        <input className="form-control mb-3" placeholder="Pesquisar..." value={pesquisa} onChange={e=>setPesquisa(e.target.value)} />
-
-        <table className="table table-bordered">
+        <table className="table table-bordered table-striped">
           <thead>
             <tr>
               <th>Imagem</th>
@@ -155,25 +190,22 @@ export default function Products() {
               <th>Ações</th>
             </tr>
           </thead>
-
           <tbody>
-            {lista.map(p => (
+            {listaFiltrada.map(p => (
               <tr key={p.id}>
                 <td>
-                  <img src={p.imagem || "https://via.placeholder.com/70"} alt={p.nome} style={{ width: "70px", height: "70px", objectFit: "contain" }} />
+                  <img
+                    src={p.imagem || "https://via.placeholder.com/70"}
+                    alt={p.nome}
+                    style={{ width: "70px", height: "70px", objectFit: "contain" }}
+                  />
                 </td>
-
                 <td>{p.nome}</td>
-
-                <td>
-                  {Number(p.preco).toLocaleString("pt-BR",{ style:"currency", currency:"BRL" })}
-                </td>
-
+                <td>{Number(p.preco).toLocaleString("pt-BR", { style:"currency", currency:"BRL" })}</td>
                 <td>{p.quantidade}</td>
-
                 <td>
-                  <button className="btn btn-warning btn-sm me-2" onClick={()=>editarProduto(p)}>Editar</button>
-                  <button className="btn btn-danger btn-sm" onClick={()=>excluirProduto(p.id)}>Excluir</button>
+                  <button className="btn btn-warning btn-sm me-2" onClick={() => editarProduto(p)}>Editar</button>
+                  <button className="btn btn-danger btn-sm" onClick={() => excluirProduto(p.id)}>Excluir</button>
                 </td>
               </tr>
             ))}
