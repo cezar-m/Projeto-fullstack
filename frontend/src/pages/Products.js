@@ -41,18 +41,45 @@ export default function Products() {
     } else setPreview(null);
   };
 
+  const formatarReal = (valor) => {
+    valor = valor.replace(/\D/g, "");
+    valor = (Number(valor) / 100).toFixed(2) + "";
+    valor = valor.replace(".", ",");
+    valor = valor.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return "R$ " + valor;
+  };
+
+  const handlePreco = (e) => {
+    const valor = e.target.value;
+    setPreco(formatarReal(valor));
+  };
+
   const limparFormulario = () => {
     setIdEditar(null);
-    setNome(""); setPreco(""); setQuantidade(""); setDescricao(""); setImagem(null); setPreview(null);
+    setNome("");
+    setPreco("");
+    setQuantidade("");
+    setDescricao("");
+    setImagem(null);
+    setPreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const salvar = async () => {
-    if (!nome || !preco || !quantidade || !descricao) { setErro("Preencha todos os campos"); return; }
+    if (!nome || !preco || !quantidade || !descricao) {
+      setErro("Preencha todos os campos");
+      return;
+    }
+
+    const precoNumerico = preco
+      .replace("R$", "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+      .trim();
 
     const formData = new FormData();
     formData.append("nome", nome);
-    formData.append("preco", preco);
+    formData.append("preco", precoNumerico);
     formData.append("quantidade", quantidade);
     formData.append("descricao", descricao);
     if (imagem) formData.append("imagem", imagem);
@@ -71,7 +98,7 @@ export default function Products() {
   const editarProduto = (p) => {
     setIdEditar(p.id);
     setNome(p.nome);
-    setPreco(String(p.preco));
+    setPreco(formatarReal(String(p.preco * 100)));
     setQuantidade(p.quantidade);
     setDescricao(p.descricao);
     setPreview(p.imagem || null);
@@ -89,32 +116,70 @@ export default function Products() {
   return (
     <div>
       <Navbar />
+
       <div className="container mt-4">
         <h2>Produtos</h2>
         {erro && <p className="text-danger">{erro}</p>}
 
-        <input placeholder="Nome" value={nome} onChange={e=>setNome(e.target.value)} />
-        <input placeholder="Preço" value={preco} onChange={e=>setPreco(e.target.value)} />
-        <input type="number" placeholder="Quantidade" value={quantidade} onChange={e=>setQuantidade(e.target.value)} />
-        <textarea placeholder="Descrição" value={descricao} onChange={e=>setDescricao(e.target.value)} />
-        <input type="file" ref={fileInputRef} onChange={handleImagemChange} />
-        {preview && <img src={preview} alt="preview" style={{ width:"120px", height:"120px", objectFit:"contain", border:"1px solid #ccc", borderRadius:"8px"}} />}
+        <div className="card p-3 mb-3">
 
-        <button onClick={salvar}>{idEditar ? "Salvar Alterações" : "Cadastrar Produto"}</button>
+          <input className="form-control mb-2" placeholder="Nome" value={nome} onChange={e=>setNome(e.target.value)} />
+
+          <input className="form-control mb-2" placeholder="Preço" value={preco} onChange={handlePreco} />
+
+          <input type="number" className="form-control mb-2" placeholder="Quantidade" value={quantidade} onChange={e=>setQuantidade(e.target.value)} />
+
+          <textarea className="form-control mb-2" placeholder="Descrição" value={descricao} onChange={e=>setDescricao(e.target.value)} />
+
+          <input type="file" className="form-control mb-2" ref={fileInputRef} onChange={handleImagemChange} />
+
+          {preview && <img src={preview} alt="preview" style={{ width:"120px", height:"120px", objectFit:"contain", border:"1px solid #ccc", borderRadius:"8px"}} />}
+
+          <button className="btn btn-primary mt-2" onClick={salvar}>
+            {idEditar ? "Salvar Alterações" : "Cadastrar Produto"}
+          </button>
+
+        </div>
 
         <hr />
-        <input placeholder="Pesquisar..." value={pesquisa} onChange={e=>setPesquisa(e.target.value)} />
 
-        <ul>
-          {lista.map(p => (
-            <li key={p.id}>
-              <img src={p.imagem || "https://via.placeholder.com/70"} alt={p.nome} style={{ width: "70px", height: "70px", objectFit: "contain" }} />
-              <strong>{p.nome}</strong> - {p.preco} - Qtd: {p.quantidade}
-              <button onClick={()=>editarProduto(p)}>Editar</button>
-              <button onClick={()=>excluirProduto(p.id)}>Excluir</button>
-            </li>
-          ))}
-        </ul>
+        <input className="form-control mb-3" placeholder="Pesquisar..." value={pesquisa} onChange={e=>setPesquisa(e.target.value)} />
+
+        <table className="table table-bordered">
+          <thead>
+            <tr>
+              <th>Imagem</th>
+              <th>Nome</th>
+              <th>Preço</th>
+              <th>Qtd</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {lista.map(p => (
+              <tr key={p.id}>
+                <td>
+                  <img src={p.imagem || "https://via.placeholder.com/70"} alt={p.nome} style={{ width: "70px", height: "70px", objectFit: "contain" }} />
+                </td>
+
+                <td>{p.nome}</td>
+
+                <td>
+                  {Number(p.preco).toLocaleString("pt-BR",{ style:"currency", currency:"BRL" })}
+                </td>
+
+                <td>{p.quantidade}</td>
+
+                <td>
+                  <button className="btn btn-warning btn-sm me-2" onClick={()=>editarProduto(p)}>Editar</button>
+                  <button className="btn btn-danger btn-sm" onClick={()=>excluirProduto(p.id)}>Excluir</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
       </div>
     </div>
   );
